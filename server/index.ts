@@ -6,7 +6,13 @@ import { createClient } from "@supabase/supabase-js";
 
 // ------------------- Setup -------------------
 const app = express();
-app.use(cors()); // In production, lock this down to your frontend origin(s)
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://when-does-it-get-good.vercel.app"
+  ],
+  credentials: true,
+}));
 app.use(express.json());
 
 // ------------------- Environment -------------------
