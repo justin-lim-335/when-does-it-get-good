@@ -51,8 +51,6 @@ export default function Carousel({ title, shows }: CarouselProps) {
     start = Math.max(shows.length - itemsPerPage, 0);
   }
 
-  const visibleShows = shows.slice(start, start + itemsPerPage);
-
   // Calculate translateX for smooth sliding
   const translateX = -(start * (100 / itemsPerPage));
 
@@ -77,7 +75,7 @@ export default function Carousel({ title, shows }: CarouselProps) {
             className="flex transition-transform duration-500"
             style={{ transform: `translateX(${translateX}%)` }}
           >
-            {shows.map((show, idx) => (
+            {shows.map((show) => (
               <div
                 key={show.tmdb_id}
                 className={`flex-shrink-0 px-2`}
