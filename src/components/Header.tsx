@@ -1,7 +1,8 @@
 // src/components/Header.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../lib/supabaseClient"; // ✅ make sure this exists
+import { supabase } from "../lib/supabaseClient";
+import { useAuth } from "../context/AuthContext"; // ✅ import the context
 import logo from "../assets/logo.png";
 
 interface Show {
@@ -13,27 +14,10 @@ interface Show {
 
 export default function Header() {
   const navigate = useNavigate();
+  const { user } = useAuth(); // ✅ global user state
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Show[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [user, setUser] = useState<any>(null);
-
-  // ✅ Check login state on mount and subscribe to changes
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      setUser(data.user);
-    };
-    checkUser();
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
-    });
-
-    return () => {
-      listener.subscription.unsubscribe();
-    };
-  }, []);
 
   // ✅ Handle search logic
   useEffect(() => {
@@ -65,10 +49,9 @@ export default function Header() {
     setShowDropdown(false);
   };
 
-  // ✅ Handle logout
+  // ✅ Logout handler
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    setUser(null);
     navigate("/");
   };
 
@@ -125,7 +108,7 @@ export default function Header() {
           )}
         </div>
 
-        {/* ✅ Login / Logout Button */}
+        {/* Login / Logout Button */}
         <div className="mt-3 sm:mt-0 flex-shrink-0">
           {user ? (
             <button

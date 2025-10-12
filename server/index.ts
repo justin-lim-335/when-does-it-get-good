@@ -195,91 +195,74 @@ app.post("/shows", async (req, res) => {
   res.json(data);
 });
 
-// POST a vote (server-validated, one vote per authenticated user per show)
-app.post("/votes", async (req, res) => {
+// POST a vote (with restriction: one per user per show)
+app.post('/votes', async (req, res) => {
+  const { user_id, show_tmdb_id, season_number, episode_number, absolute_number } = req.body;
+
+  if (!user_id || !show_tmdb_id || !season_number || !episode_number || !absolute_number) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
   try {
-    const { show_tmdb_id, season_number, episode_number, absolute_number } = req.body;
-
-    // Basic validation of required vote fields
-    if (!show_tmdb_id || !season_number || !episode_number || !absolute_number) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
-
-    // Validate token & get authoritative user id (if any)
-    const authUserId = await getUserIdFromAuthHeader(req);
-
-    // Optional: force login in production by setting REQUIRE_LOGIN_FOR_VOTES=true
-    const requireLogin = process.env.REQUIRE_LOGIN_FOR_VOTES === "true";
-    if (requireLogin && !authUserId) {
-      return res.status(401).json({ error: "Authentication required to vote" });
-    }
-
-    // Determine effective user id to use (auth token preferred)
-    const bodyUserId = req.body.user_id ?? null;
-    const userIdToUse = authUserId || bodyUserId || null;
-
-    // Ensure show exists in Supabase (insert from TMDb if missing)
-    const tmdbIdNum = Number(show_tmdb_id);
+    // 1️⃣ Ensure the show exists
     const { data: existingShow } = await supabase
-      .from("shows")
-      .select("*")
-      .eq("tmdb_id", tmdbIdNum)
-      .maybeSingle();
+      .from('shows')
+      .select('*')
+      .eq('tmdb_id', show_tmdb_id)
+      .single();
 
     if (!existingShow) {
+      // Fetch show details from TMDb
       const tmdbRes = await fetch(
-        `https://api.themoviedb.org/3/tv/${tmdbIdNum}?api_key=${TMDB_API_KEY}`
+        `https://api.themoviedb.org/3/tv/${show_tmdb_id}?api_key=${TMDB_API_KEY}`
       );
       const tmdbData = await tmdbRes.json();
 
-      const { error: insertError } = await supabase.from("shows").insert([
-        {
+      // Insert show into Supabase
+      const { error: insertError } = await supabase
+        .from('shows')
+        .insert([{
           tmdb_id: tmdbData.id,
           title: tmdbData.name,
           poster_path: tmdbData.poster_path,
-          first_air_date: tmdbData.first_air_date,
-        },
-      ]);
+          first_air_date: tmdbData.first_air_date
+        }]);
       if (insertError) throw insertError;
     }
 
-    // If we have an authenticated user, enforce one vote per user per show
-    if (userIdToUse) {
-      const { data: existingVote } = await supabase
-        .from("votes")
-        .select("*")
-        .eq("user_id", userIdToUse)
-        .eq("show_tmdb_id", tmdbIdNum)
-        .maybeSingle();
+    // 2️⃣ Check if this user has already voted for this show
+    const { data: existingVote } = await supabase
+      .from('votes')
+      .select('*')
+      .eq('user_id', user_id)
+      .eq('show_tmdb_id', show_tmdb_id)
+      .maybeSingle();
 
-      if (existingVote) {
-        return res.status(400).json({ error: "User already voted for this show" });
-      }
+    if (existingVote) {
+      return res.status(400).json({ error: 'User already voted for this show' });
     }
 
-    // Insert the vote (user_id may be null for anonymous if allowed)
+    // 3️⃣ Insert the vote
     const { data, error } = await supabase
-      .from("votes")
-      .insert([
-        {
-          user_id: userIdToUse,
-          show_tmdb_id: tmdbIdNum,
-          season_number,
-          episode_number,
-          absolute_number,
-        },
-      ])
+      .from('votes')
+      .insert([{
+        user_id,
+        show_tmdb_id,
+        season_number,
+        episode_number,
+        absolute_number,
+      }])
       .select();
 
     if (error) throw error;
 
-    // Respond with inserted vote(s)
-    res.json(data);
+    res.json({ message: "Vote submitted successfully", vote: data });
   } catch (err: any) {
-    console.error("Vote insertion error:", err);
-    res.status(500).json({ error: err.message || "Internal server error" });
+    console.error('Vote insertion error:', err);
+    res.status(500).json({ error: err.message || 'Internal server error' });
   }
 });
+
 
 // GET average “gets good” episode for a show
 app.get("/shows/:tmdb_id/average", async (req, res) => {

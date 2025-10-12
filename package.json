@@ -4,11 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev:frontend": "vite",
-    "dev:backend": "tsx watch server/index.ts",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+  "dev:frontend": "vite",
+  "dev:backend": "tsx watch server/index.ts",
+  "build": "tsc -b && vite build",
+  "preview": "vite preview",
+  "lint": "eslint .",
+  "start": "tsx server/index.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
