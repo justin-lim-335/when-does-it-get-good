@@ -1,7 +1,6 @@
 // src/ShowPage.tsx
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import Header from "./components/Header";
 import { supabase } from "./lib/supabaseClient";
 import { useAuth } from "./context/AuthContext"; // ✅ import your auth context
 
