@@ -20,6 +20,7 @@ interface HomepageData {
 export default function HomePage() {
   const [data, setData] = useState<HomepageData | null>(null);
   const [loading, setLoading] = useState(true);
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
 
   // Helper to normalize any show object
   const normalizeShow = (s: any): Show => ({
@@ -33,7 +34,7 @@ export default function HomePage() {
   const fetchHomepageData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:3001/shows/popular");
+      const res = await fetch(`${API_BASE}/shows/popular`);
       const json = await res.json();
 
       // Normalize and deduplicate recently voted shows

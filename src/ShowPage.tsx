@@ -89,7 +89,7 @@ export default function ShowPage() {
 
     const fetchAverage = async () => {
       try {
-        const res = await fetch(`http://localhost:3001/shows/${tmdb_id}/average`);
+        const res = await fetch(`${API_BASE}/shows/${tmdb_id}/average`);
         const data = await res.json();
         setAverage(data.average);
       } catch (err) {
@@ -127,7 +127,7 @@ export default function ShowPage() {
     if (!episode) return alert("Invalid episode selected.");
 
     try {
-      await fetch('${API_BASE}/votes', {
+      await fetch(`${API_BASE}/votes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
