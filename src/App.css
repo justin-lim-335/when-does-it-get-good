@@ -1,42 +1,54 @@
-#root {
-  max-width: 1280px;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Full-width container for app content */
+.app-container {
+  width: 100%;
   margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  padding: 0 1rem;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* Header styling */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 0;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e5e5;
+  z-index: 50;
+  position: sticky;
+  top: 0;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+/* Main content area */
+main {
+  width: 100%;
+  max-width: 1200px; /* Optional max width for large screens */
+  margin: 0 auto;
+  padding: 2rem 0;
 }
 
-.card {
-  padding: 2em;
+/* Ensure carousels stretch full width */
+.carousel-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
-.read-the-docs {
-  color: #888;
+/* Carousel title */
+.carousel-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
+
+/* Remove horizontal gaps caused by default flex spacing */
+.flex-row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 1rem;
+  overflow: hidden;
 }
