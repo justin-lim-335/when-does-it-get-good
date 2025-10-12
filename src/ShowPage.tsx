@@ -24,6 +24,7 @@ interface Show {
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w300";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
 
 export default function ShowPage() {
   const { tmdb_id } = useParams<{ tmdb_id: string }>();
@@ -126,7 +127,7 @@ export default function ShowPage() {
     if (!episode) return alert("Invalid episode selected.");
 
     try {
-      await fetch("http://localhost:3001/votes", {
+      await fetch('${API_BASE}/votes', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
