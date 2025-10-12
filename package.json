@@ -12,7 +12,7 @@
     "build": "npm run build:frontend && npm run build:backend",
     "preview": "vite preview",
     "lint": "eslint .",
-    "start:backend": "node server/index.ts",
+    "start:backend": "node server/dist/index.js",
     "start": "npm run start:backend"
   },
   "dependencies": {
