@@ -12,7 +12,8 @@
     "build": "npm run build:frontend && npm run build:backend",
     "preview": "vite preview",
     "lint": "eslint .",
-    "start": "tsx server/index.ts"
+    "start:backend": "node server/index.ts",
+    "start": "npm run start:backend"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
