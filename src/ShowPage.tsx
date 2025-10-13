@@ -150,18 +150,37 @@ export default function ShowPage() {
     const episode = episodes.find((ep) => ep.absolute_number === selectedEpisode);
     if (!episode) return alert("Invalid episode selected.");
 
+    const tmdbIdNum = Number(tmdb_id);
+    if (isNaN(tmdbIdNum)) return alert("Invalid show ID");
+
     try {
-      await fetch(`${API_BASE}/votes`, {
+      console.log("Submitting vote:", {
+        user_id: user.id,
+        show_tmdb_id: tmdbIdNum,
+        season_number: episode.season_number,
+        episode_number: episode.episode_number,
+        absolute_number: episode.absolute_number,
+      });
+
+      const response = await fetch(`${API_BASE}/votes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           user_id: user.id,
-          show_tmdb_id: Number(tmdb_id),
+          show_tmdb_id: tmdbIdNum,
           season_number: episode.season_number,
           episode_number: episode.episode_number,
           absolute_number: episode.absolute_number,
         }),
       });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("Vote submission failed:", data);
+        return alert(`Failed to submit vote: ${data.error}`);
+      }
+
       alert("Vote submitted!");
       setUserVote(episode.absolute_number);
       setIsChangingVote(false);
@@ -171,6 +190,7 @@ export default function ShowPage() {
       alert("Failed to submit vote.");
     }
   };
+
 
   // Average indicator setup
   const averageEpisode =
