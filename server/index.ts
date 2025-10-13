@@ -209,7 +209,7 @@ app.post("/shows", async (req, res) => {
   res.json(data);
 });
 
-// POST a vote (with show metadata required and auto-insert)
+// POST a vote (one per user per show, ensure shows table is populated)
 app.post("/votes", async (req, res) => {
   const {
     user_id,
@@ -237,51 +237,28 @@ app.post("/votes", async (req, res) => {
   }
 
   try {
-    // --- 2️⃣ Ensure show exists in shows table ---
-    const { data: existingShow, error: fetchError } = await supabase
+    // --- 2️⃣ Upsert show metadata into shows table ---
+    const { data: showData, error: showError } = await supabase
       .from("shows")
-      .select("*")
-      .eq("tmdb_id", show_tmdb_id)
-      .maybeSingle();
+      .upsert(
+        [{ tmdb_id: show_tmdb_id, title, poster_path, first_air_date }],
+        { onConflict: "tmdb_id" } // minimal to reduce payload
+      );
 
-    if (fetchError) throw fetchError;
-
-    if (!existingShow) {
-      // Insert the show if missing
-      const { error: insertError } = await supabase
-        .from("shows")
-        .insert([{ tmdb_id: show_tmdb_id, title, poster_path, first_air_date }]);
-      if (insertError) throw insertError;
-    } else {
-      // Optional: update missing metadata if null
-      const updates: any = {};
-      if (!existingShow.title) updates.title = title;
-      if (!existingShow.poster_path) updates.poster_path = poster_path;
-      if (!existingShow.first_air_date) updates.first_air_date = first_air_date;
-
-      if (Object.keys(updates).length > 0) {
-        const { error: updateError } = await supabase
-          .from("shows")
-          .update(updates)
-          .eq("tmdb_id", show_tmdb_id);
-        if (updateError) throw updateError;
-      }
-    }
+    if (showError) throw showError;
 
     // --- 3️⃣ Upsert vote (one per user per show) ---
     const { data: voteData, error: voteError } = await supabase
       .from("votes")
       .upsert(
-        {
+        [{
           user_id,
           show_tmdb_id,
           season_number,
           episode_number,
           absolute_number,
-        },
-        {
-          onConflict: "user_id,show_tmdb_id",
-        }
+        }],
+        { onConflict: "user_id,show_tmdb_id" } // keep vote row
       );
 
     if (voteError) throw voteError;
@@ -292,6 +269,7 @@ app.post("/votes", async (req, res) => {
     res.status(500).json({ error: err.message || "Internal server error" });
   }
 });
+
 
 
 // GET a user's vote for a show
