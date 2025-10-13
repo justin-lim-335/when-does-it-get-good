@@ -194,8 +194,16 @@ app.post("/shows", async (req, res) => {
 
   const { data, error } = await supabase
     .from("shows")
-    .upsert([{ tmdb_id, title, first_air_date, poster_path }])
+    .upsert([{
+      tmdb_id: Number(tmdb_id),
+      title,
+      first_air_date,
+      poster_path
+    }], {
+      onConflict: "tmdb_id"
+    })
     .select();
+
 
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
@@ -203,59 +211,72 @@ app.post("/shows", async (req, res) => {
 
 // POST a vote (with restriction: one per user per show)
 app.post("/votes", async (req, res) => {
+  const { user_id, show_tmdb_id, season_number, episode_number, absolute_number } = req.body;
+
+  // Before inserting vote
+  const { data: showExists } = await supabase
+    .from("shows")
+    .select("*")
+    .eq("tmdb_id", Number(show_tmdb_id))
+    .maybeSingle();
+
+  if (!showExists) {
+    // Insert show first
+    await supabase.from("shows").insert([{
+      tmdb_id: Number(show_tmdb_id),
+      title: req.body.title || "Unknown",
+      poster_path: req.body.poster_path || null,
+      first_air_date: req.body.first_air_date || null
+    }]);
+  }
+
+  if (!user_id || !show_tmdb_id || !absolute_number) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
   try {
-    const { user_id, show_tmdb_id, season_number, episode_number, absolute_number } = req.body;
-
-    if (!user_id || !show_tmdb_id || !absolute_number) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
-
+    // Upsert to avoid unique constraint error
     const { data, error } = await supabase
       .from("votes")
       .upsert(
-        [
-          {
-            user_id,
-            show_tmdb_id,
-            season_number,
-            episode_number,
-            absolute_number,
-          },
-        ],
-        { onConflict: "user_id,show_tmdb_id" } // ensures 1 vote per user per show
-      )
-      .select();
+        {
+          user_id,
+          show_tmdb_id: Number(show_tmdb_id),
+          season_number: Number(season_number),
+          episode_number: Number(episode_number),
+          absolute_number: Number(absolute_number),
+        },
+        {
+          onConflict: "user_id,show_tmdb_id", // prevents duplicates
+        }
+      );
 
     if (error) throw error;
+
     res.json({ success: true, data });
-  } catch (err) {
-    console.error("Error submitting vote:", err);
-    res.status(500).json({ error: typeof err === "object" && err !== null && "message" in err ? (err as any).message : "Internal server error" });
+  } catch (err: any) {
+    console.error("Supabase insert error:", err);
+    res.status(500).json({ error: err.message || "Internal server error" });
   }
 });
 
+
+
 // GET user's vote for a show
+// GET a user's vote for a show
 app.get("/votes/:user_id/:show_tmdb_id", async (req, res) => {
   const { user_id, show_tmdb_id } = req.params;
 
-  try {
-    const { data, error } = await supabase
-      .from("votes")
-      .select("absolute_number, season_number, episode_number")
-      .eq("user_id", user_id)
-      .eq("show_tmdb_id", show_tmdb_id)
-      .single();
+  const { data, error } = await supabase
+    .from("votes")
+    .select("*")
+    .eq("user_id", user_id)
+    .eq("show_tmdb_id", Number(show_tmdb_id))
+    .maybeSingle();
 
-    if (error && error.code !== "PGRST116") throw error; // PGRST116 = "No rows found"
-    if (!data) return res.status(404).json({ message: "No vote found" });
-
-    res.json(data);
-  } catch (err) {
-    console.error("Error fetching user vote:", err);
-    res.status(500).json({ error: typeof err === "object" && err !== null && "message" in err ? (err as any).message : "Internal server error" });
-  }
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data || {});
 });
-
 
 // GET average “gets good” episode for a show
 app.get("/shows/:tmdb_id/average", async (req, res) => {

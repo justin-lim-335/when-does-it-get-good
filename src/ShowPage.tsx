@@ -86,15 +86,19 @@ export default function ShowPage() {
   // Fetch average
   const fetchAverage = async () => {
     try {
-      const res = await fetch(`${API_BASE}/shows/${Number(tmdb_id)}/average`);
+      const res = await fetch(`${API_BASE}/shows/${tmdb_id}/average`);
       const data = await res.json();
-      const avgValue =
-        typeof data.average === "number"
-          ? data.average
-          : typeof data.data?.average === "number"
-          ? data.data.average
-          : null;
-      setAverage(avgValue);
+
+      // Parse backend string into absolute_number
+      if (data.average && episodes.length > 0) {
+        const matchedEpisode = episodes.find(
+          (ep) =>
+            `S${ep.season_number}E${ep.episode_number} - ${ep.name}` === data.average
+        );
+        setAverage(matchedEpisode ? matchedEpisode.absolute_number : null);
+      } else {
+        setAverage(null);
+      }
     } catch (err) {
       console.error("Failed to fetch average:", err);
     }
@@ -136,7 +140,7 @@ export default function ShowPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [tmdb_id, user]);
+  }, [tmdb_id, user, episodes]);
 
   // Submit or change vote
   const submitVote = async () => {
@@ -171,149 +175,143 @@ export default function ShowPage() {
   // Average indicator setup
   const averageEpisode =
     average && episodes.length > 0
-      ? episodes.find((ep) => ep.absolute_number === Math.round(average))
+      ? episodes.find((ep) => ep.absolute_number === average)
       : null;
 
   const positionPercent =
-    average && episodes.length > 1
-      ? ((Math.round(average) - 1) / (episodes.length - 1)) * 100
+    averageEpisode && episodes.length > 1
+      ? ((averageEpisode.absolute_number - 1) / (episodes.length - 1)) * 100
       : 50;
 
-  const hasVotes = average !== null && averageEpisode;
-
+  const hasVotes = !!averageEpisode;
   const userEpisode = userVote
     ? episodes.find((ep) => ep.absolute_number === userVote)
     : null;
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-2 gap-10">
-        {/* LEFT COLUMN */}
-        {!loading && show && (
-          <div>
-            <h1 className="text-4xl font-bold mb-6 text-gray-900">{show.title}</h1>
-            <div className="flex flex-col sm:flex-row gap-8 mb-8">
-              {show.poster_path && (
-                <img
-                  src={`${TMDB_IMAGE_BASE}${show.poster_path}`}
-                  alt={show.title}
-                  className="rounded-xl shadow-lg w-64"
-                />
-              )}
-              <div className="flex flex-col justify-center text-gray-700 text-lg space-y-2">
-                <p><strong>Year:</strong> {show.first_air_date ? new Date(show.first_air_date).getFullYear() : "N/A"}</p>
-                <p><strong>Seasons:</strong> {show.number_of_seasons || "N/A"}</p>
-                <p><strong>Episodes:</strong> {show.number_of_episodes || "N/A"}</p>
-              </div>
-            </div>
-            <div>
-              <h2 className="text-2xl font-semibold mb-2 text-gray-800">Description</h2>
-              <p className="text-gray-600 leading-relaxed">{show.overview || "No description available."}</p>
+return (
+  <div className="min-h-screen bg-gray-50">
+    <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-2 gap-10">
+      {/* LEFT COLUMN */}
+      {!loading && show && (
+        <div>
+          <h1 className="text-4xl font-bold mb-6 text-gray-900">{show.title}</h1>
+          <div className="flex flex-col sm:flex-row gap-8 mb-8">
+            {show.poster_path && (
+              <img
+                src={`${TMDB_IMAGE_BASE}${show.poster_path}`}
+                alt={show.title}
+                className="rounded-xl shadow-lg w-64"
+              />
+            )}
+            <div className="flex flex-col justify-center text-gray-700 text-lg space-y-2">
+              <p><strong>Year:</strong> {show.first_air_date ? new Date(show.first_air_date).getFullYear() : "N/A"}</p>
+              <p><strong>Seasons:</strong> {show.number_of_seasons || "N/A"}</p>
+              <p><strong>Episodes:</strong> {show.number_of_episodes || "N/A"}</p>
             </div>
           </div>
+          <div>
+            <h2 className="text-2xl font-semibold mb-2 text-gray-800">Description</h2>
+            <p className="text-gray-600 leading-relaxed">{show.overview || "No description available."}</p>
+          </div>
+        </div>
+      )}
+
+      {/* RIGHT COLUMN — Voting Section */}
+      <div className="bg-white rounded-2xl shadow-md p-6 flex flex-col gap-6">
+        {!userVote || isChangingVote ? (
+          <>
+            <h2 className="text-2xl font-semibold text-gray-800">Submit Your Vote</h2>
+
+            {episodes.length > 0 ? (
+              <select
+                className="border border-gray-300 rounded-md p-3 w-full"
+                value={selectedEpisode ?? ""}
+                onChange={(e) => setSelectedEpisode(Number(e.target.value))}
+              >
+                <option value="">-- Choose an episode --</option>
+                {episodes.map((ep) => (
+                  <option key={ep.absolute_number} value={ep.absolute_number}>
+                    S{ep.season_number}E{ep.episode_number} — {ep.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className="text-gray-500 italic">Loading episodes...</p>
+            )}
+
+            <button
+              onClick={submitVote}
+              className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-md transition"
+            >
+              Submit Vote
+            </button>
+          </>
+        ) : (
+          <>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-2">Your Vote</h2>
+            {userEpisode ? (
+              <p className="text-lg text-gray-700">
+                S{userEpisode.season_number}E{userEpisode.episode_number} — {userEpisode.name}
+              </p>
+            ) : (
+              <p className="text-gray-500 italic">Could not find episode.</p>
+            )}
+            <button
+              onClick={() => setIsChangingVote(true)}
+              className="bg-black hover:bg-gray-800 text-white font-medium py-3 px-4 rounded-md transition"
+            >
+              Change Vote
+            </button>
+          </>
         )}
 
-        {/* RIGHT COLUMN — Voting */}
-        <div className="bg-white rounded-2xl shadow-md p-6 flex flex-col gap-6">
-          {!userVote || isChangingVote ? (
-            <>
-              <h2 className="text-2xl font-semibold text-gray-800">Submit Your Vote</h2>
+        {/* Average "Gets Good" line */}
+        <div className="mt-6 border-t pt-6 text-center relative">
+          <h3 className="text-xl font-semibold text-gray-800 mb-6">
+            When Does <span className="italic text-blue-600">{show?.title}</span> Get Good?
+          </h3>
 
-              {episodes.length > 0 ? (
-                <select
-                  className="border border-gray-300 rounded-md p-3 w-full"
-                  value={selectedEpisode ?? ""}
-                  onChange={(e) => setSelectedEpisode(Number(e.target.value))}
-                >
-                  <option value="">-- Choose an episode --</option>
-                  {episodes.map((ep) => (
-                    <option key={ep.absolute_number} value={ep.absolute_number}>
-                      S{ep.season_number}E{ep.episode_number} — {ep.name}
-                    </option>
-                  ))}
-                </select>
+          <div className="relative w-full h-16 flex items-center justify-center">
+            {/* Base black line */}
+            <div className="w-3/4 h-[4px] bg-black relative">
+              {/* Tangential black dots */}
+              <div className="absolute -left-2 top-1/2 w-4 h-4 bg-black rounded-full -translate-y-1/2"></div>
+              <div className="absolute -right-2 top-1/2 w-4 h-4 bg-black rounded-full -translate-y-1/2"></div>
+
+              {/* Average episode dot */}
+              <div
+                className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-white shadow-md ${
+                  hasVotes ? "bg-blue-500" : "bg-red-500"
+                }`}
+                style={{
+                  left: `${hasVotes ? positionPercent : 50}%`,
+                  transform: "translate(-50%, -50%)",
+                }}
+              ></div>
+            </div>
+
+            {/* Bubble below line, always centered */}
+            <div
+              className={`absolute top-full mt-3 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg shadow text-center max-w-xs ${
+                hasVotes ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-600"
+              }`}
+            >
+              {hasVotes ? (
+                <>
+                  <p className="font-bold">S{averageEpisode?.season_number}E{averageEpisode?.episode_number}</p>
+                  <p className="italic">{averageEpisode?.name}</p>
+                </>
               ) : (
-                <p className="text-gray-500 italic">Loading episodes...</p>
+                <>
+                  <p className="font-bold">N/A</p>
+                  <p className="italic text-gray-800">Vote to help us find out!</p>
+                </>
               )}
-
-              <button
-                onClick={submitVote}
-                className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-md transition"
-              >
-                Submit Vote
-              </button>
-            </>
-          ) : (
-            <>
-              <h2 className="text-2xl font-semibold text-gray-800 mb-2">Your Vote</h2>
-              {userEpisode ? (
-                <p className="text-lg text-gray-700">
-                  S{userEpisode.season_number}E{userEpisode.episode_number} — {userEpisode.name}
-                </p>
-              ) : (
-                <p className="text-gray-500 italic">Could not find episode.</p>
-              )}
-              <button
-                onClick={() => setIsChangingVote(true)}
-                className="bg-black hover:bg-gray-800 text-white font-medium py-3 px-4 rounded-md transition"
-              >
-                Change Vote
-              </button>
-            </>
-          )}
-
-          {/* Average Visualization */}
-          <div className="mt-6 border-t pt-6 text-center relative">
-            <h3 className="text-xl font-semibold text-gray-800 mb-6">
-              When Does{" "}
-              <span className="italic text-blue-600">{show?.title}</span> Get Good?
-            </h3>
-
-            <div className="relative w-full h-16 flex items-center justify-center">
-              <div className="w-3/4 h-[2px] bg-gray-400 relative">
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-black rounded-full"></div>
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-black rounded-full"></div>
-
-                <div
-                  className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-white shadow-md ${
-                    hasVotes ? "bg-blue-500" : "bg-red-500"
-                  }`}
-                  style={{
-                    left: `${positionPercent}%`,
-                    transform: "translate(-50%, -50%)",
-                  }}
-                ></div>
-
-                <div
-                  className={`absolute top-10 px-3 py-1 rounded-lg shadow text-sm whitespace-nowrap ${
-                    hasVotes
-                      ? "bg-blue-100 text-blue-700"
-                      : "bg-red-100 text-red-600"
-                  }`}
-                  style={{
-                    left: `${positionPercent}%`,
-                    transform: "translate(-50%, 0)",
-                  }}
-                >
-                  {hasVotes ? (
-                    <>
-                      S{averageEpisode?.season_number}E{averageEpisode?.episode_number} —{" "}
-                      {averageEpisode?.name}
-                      <div className="absolute left-1/2 -top-2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-blue-100"></div>
-                    </>
-                  ) : (
-                    <>
-                      <p className="font-semibold text-red-600">N/A</p>
-                      <p className="text-gray-800">Vote to help us find out!</p>
-                      <div className="absolute left-1/2 -top-2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-red-100"></div>
-                    </>
-                  )}
-                </div>
-              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 }
