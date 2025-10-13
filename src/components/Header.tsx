@@ -5,6 +5,8 @@ import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext"; // ✅ import the context
 import logo from "../assets/logo.png";
 
+const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 interface Show {
   tmdb_id: number;
   title: string;
@@ -30,7 +32,7 @@ export default function Header() {
     const fetchSuggestions = async () => {
       try {
         const res = await fetch(
-          `http://localhost:3001/shows/search?query=${encodeURIComponent(query)}`
+          `${VITE_API_BASE_URL}/search?query=${encodeURIComponent(query)}`
         );
         const data = await res.json();
         setSuggestions(data.slice(0, 6)); // limit dropdown
