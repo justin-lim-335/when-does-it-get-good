@@ -209,57 +209,41 @@ app.post("/shows", async (req, res) => {
   res.json(data);
 });
 
-// POST a vote (one per user per show, ensure shows table is populated)
+// POST a vote (one per user per show, ensure shows table has metadata)
 app.post("/votes", async (req, res) => {
-  const {
-    user_id,
-    show_tmdb_id,
-    season_number,
-    episode_number,
-    absolute_number,
-    title,
-    poster_path,
-    first_air_date,
-  } = req.body;
+  const { user_id, show_tmdb_id, season_number, episode_number, absolute_number } = req.body;
 
-  // --- 1️⃣ Validate required fields ---
-  if (
-    !user_id ||
-    !show_tmdb_id ||
-    season_number === undefined ||
-    episode_number === undefined ||
-    !absolute_number ||
-    !title ||
-    !poster_path ||
-    !first_air_date
-  ) {
-    return res.status(400).json({ error: "Missing required vote or show fields" });
+  if (!user_id || !show_tmdb_id || season_number === undefined || episode_number === undefined || !absolute_number) {
+    return res.status(400).json({ error: "Missing required vote fields" });
   }
 
   try {
-    // --- 2️⃣ Upsert show metadata into shows table ---
-    const { data: showData, error: showError } = await supabase
+    // Fetch metadata from TMDb
+    const tmdbRes = await fetch(`https://api.themoviedb.org/3/tv/${show_tmdb_id}?api_key=${TMDB_API_KEY}`);
+    if (!tmdbRes.ok) throw new Error("Failed to fetch show metadata from TMDb");
+    const tmdbData = await tmdbRes.json();
+
+    // Use fallbacks to avoid nulls
+    const title = tmdbData.name || "Unknown Title";
+    const poster_path = tmdbData.poster_path || "/placeholder.png";
+    const first_air_date = tmdbData.first_air_date || "2000-01-01";
+
+    // Upsert show metadata
+    const { error: showError } = await supabase
       .from("shows")
       .upsert(
         [{ tmdb_id: show_tmdb_id, title, poster_path, first_air_date }],
-        { onConflict: "tmdb_id" } // minimal to reduce payload
+        { onConflict: "tmdb_id" }
       );
-
     if (showError) throw showError;
 
-    // --- 3️⃣ Upsert vote (one per user per show) ---
+    // Insert vote (requires unique constraint in Supabase)
     const { data: voteData, error: voteError } = await supabase
       .from("votes")
-      .upsert(
-        [{
-          user_id,
-          show_tmdb_id,
-          season_number,
-          episode_number,
-          absolute_number,
-        }],
-        { onConflict: "user_id,show_tmdb_id" } // keep vote row
+      .insert(
+        [{ user_id, show_tmdb_id, season_number, episode_number, absolute_number }]
       );
+      console.log("Insert vote response:", { voteData, voteError });
 
     if (voteError) throw voteError;
 
@@ -269,6 +253,7 @@ app.post("/votes", async (req, res) => {
     res.status(500).json({ error: err.message || "Internal server error" });
   }
 });
+
 
 
 
