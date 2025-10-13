@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "./lib/supabaseClient";
-import { useAuth } from "./context/AuthContext"; // ✅ import your auth context
+import { useAuth } from "./context/AuthContext";
 
 interface Episode {
   season_number: number;
@@ -14,7 +14,7 @@ interface Episode {
 interface Show {
   tmdb_id: number;
   name?: string;
-  title?: string; 
+  title?: string;
   poster_path?: string;
   first_air_date?: string;
   overview?: string;
@@ -28,14 +28,17 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
 
 export default function ShowPage() {
   const { tmdb_id } = useParams<{ tmdb_id: string }>();
-  const { user } = useAuth(); // ✅ get logged-in user
+  const { user } = useAuth();
+
   const [show, setShow] = useState<Show | null>(null);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [selectedEpisode, setSelectedEpisode] = useState<number | null>(null);
   const [average, setAverage] = useState<number | null>(null);
+  const [userVote, setUserVote] = useState<number | null>(null);
+  const [isChangingVote, setIsChangingVote] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Fetch show details and episodes from TMDb
+  // Fetch show details and episodes
   useEffect(() => {
     if (!tmdb_id) return;
 
@@ -46,11 +49,7 @@ export default function ShowPage() {
           `https://api.themoviedb.org/3/tv/${tmdb_id}?api_key=${TMDB_API_KEY}`
         );
         const data = await res.json();
-
-        const formattedShow = {
-          ...data,
-          title: data.name || data.title,
-        };
+        const formattedShow = { ...data, title: data.name || data.title };
         setShow(formattedShow);
 
         let allEpisodes: Episode[] = [];
@@ -61,15 +60,16 @@ export default function ShowPage() {
             `https://api.themoviedb.org/3/tv/${tmdb_id}/season/${season}?api_key=${TMDB_API_KEY}`
           );
           const seasonData = await seasonRes.json();
-
-          seasonData.episodes.forEach((ep: any) => {
-            allEpisodes.push({
-              season_number: season,
-              episode_number: ep.episode_number,
-              absolute_number: absoluteCounter++,
-              name: ep.name,
+          if (seasonData.episodes) {
+            seasonData.episodes.forEach((ep: any) => {
+              allEpisodes.push({
+                season_number: season,
+                episode_number: ep.episode_number,
+                absolute_number: absoluteCounter++,
+                name: ep.name,
+              });
             });
-          });
+          }
         }
 
         setEpisodes(allEpisodes);
@@ -83,32 +83,52 @@ export default function ShowPage() {
     fetchShow();
   }, [tmdb_id]);
 
-  // Fetch average + subscribe to realtime updates
+  // Fetch average
+  const fetchAverage = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/shows/${Number(tmdb_id)}/average`);
+      const data = await res.json();
+      const avgValue =
+        typeof data.average === "number"
+          ? data.average
+          : typeof data.data?.average === "number"
+          ? data.data.average
+          : null;
+      setAverage(avgValue);
+    } catch (err) {
+      console.error("Failed to fetch average:", err);
+    }
+  };
+
+  // Fetch user's existing vote
+  const fetchUserVote = async () => {
+    if (!user || !tmdb_id) return;
+    try {
+      const res = await fetch(
+        `${API_BASE}/votes/${user.id}/${Number(tmdb_id)}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.absolute_number) {
+          setUserVote(data.absolute_number);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch user vote:", err);
+    }
+  };
+
+  // On mount: get average + user vote + subscribe to updates
   useEffect(() => {
     if (!tmdb_id) return;
-
-    const fetchAverage = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/shows/${tmdb_id}/average`);
-        const data = await res.json();
-        setAverage(data.average);
-      } catch (err) {
-        console.error("Failed to fetch average:", err);
-      }
-    };
-
     fetchAverage();
+    fetchUserVote();
 
     const channel = supabase
       .channel(`votes-show-${tmdb_id}`)
       .on(
         "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "votes",
-          filter: `show_tmdb_id=eq.${tmdb_id}`,
-        },
+        { event: "*", schema: "public", table: "votes", filter: `show_tmdb_id=eq.${tmdb_id}` },
         () => fetchAverage()
       )
       .subscribe();
@@ -116,9 +136,9 @@ export default function ShowPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [tmdb_id]);
+  }, [tmdb_id, user]);
 
-  // Submit vote
+  // Submit or change vote
   const submitVote = async () => {
     if (!user) return alert("You must be logged in to vote!");
     if (selectedEpisode === null) return alert("Select an episode first.");
@@ -131,7 +151,7 @@ export default function ShowPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id: user.id, // ✅ send logged-in user's ID
+          user_id: user.id,
           show_tmdb_id: Number(tmdb_id),
           season_number: episode.season_number,
           episode_number: episode.episode_number,
@@ -139,92 +159,158 @@ export default function ShowPage() {
         }),
       });
       alert("Vote submitted!");
+      setUserVote(episode.absolute_number);
+      setIsChangingVote(false);
+      fetchAverage(); // refresh immediately
     } catch (err) {
       console.error("Failed to submit vote:", err);
       alert("Failed to submit vote.");
     }
   };
 
+  // Average indicator setup
+  const averageEpisode =
+    average && episodes.length > 0
+      ? episodes.find((ep) => ep.absolute_number === Math.round(average))
+      : null;
+
+  const positionPercent =
+    average && episodes.length > 1
+      ? ((Math.round(average) - 1) / (episodes.length - 1)) * 100
+      : 50;
+
+  const hasVotes = average !== null && averageEpisode;
+
+  const userEpisode = userVote
+    ? episodes.find((ep) => ep.absolute_number === userVote)
+    : null;
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-3 gap-10">
+      <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-2 gap-10">
         {/* LEFT COLUMN */}
-        {loading ? (
-          <div className="md:col-span-2 animate-pulse">
-            {/* Loading skeleton */}
-            <div className="h-10 w-1/2 bg-gray-300 rounded mb-6"></div>
+        {!loading && show && (
+          <div>
+            <h1 className="text-4xl font-bold mb-6 text-gray-900">{show.title}</h1>
             <div className="flex flex-col sm:flex-row gap-8 mb-8">
-              <div className="w-64 h-96 bg-gray-300 rounded-xl"></div>
-              <div className="flex-1 space-y-3">
-                <div className="h-6 w-1/3 bg-gray-300 rounded"></div>
-                <div className="h-6 w-1/4 bg-gray-300 rounded"></div>
-                <div className="h-6 w-1/2 bg-gray-300 rounded"></div>
-                <div className="h-6 w-1/3 bg-gray-300 rounded"></div>
+              {show.poster_path && (
+                <img
+                  src={`${TMDB_IMAGE_BASE}${show.poster_path}`}
+                  alt={show.title}
+                  className="rounded-xl shadow-lg w-64"
+                />
+              )}
+              <div className="flex flex-col justify-center text-gray-700 text-lg space-y-2">
+                <p><strong>Year:</strong> {show.first_air_date ? new Date(show.first_air_date).getFullYear() : "N/A"}</p>
+                <p><strong>Seasons:</strong> {show.number_of_seasons || "N/A"}</p>
+                <p><strong>Episodes:</strong> {show.number_of_episodes || "N/A"}</p>
               </div>
             </div>
-            <div className="h-32 bg-gray-300 rounded"></div>
+            <div>
+              <h2 className="text-2xl font-semibold mb-2 text-gray-800">Description</h2>
+              <p className="text-gray-600 leading-relaxed">{show.overview || "No description available."}</p>
+            </div>
           </div>
-        ) : (
-          show && (
-            <div className="md:col-span-2">
-              <h1 className="text-4xl font-bold mb-6 text-gray-900">{show.title}</h1>
-
-              <div className="flex flex-col sm:flex-row gap-8 mb-8">
-                {show.poster_path && (
-                  <img
-                    src={`${TMDB_IMAGE_BASE}${show.poster_path}`}
-                    alt={show.title}
-                    className="rounded-xl shadow-lg w-64"
-                  />
-                )}
-
-                <div className="flex flex-col justify-center text-gray-700 text-lg space-y-2">
-                  <p><strong>Year:</strong> {show.first_air_date ? new Date(show.first_air_date).getFullYear() : "N/A"}</p>
-                  <p><strong>Seasons:</strong> {show.number_of_seasons || "N/A"}</p>
-                  <p><strong>Episodes:</strong> {show.number_of_episodes || "N/A"}</p>
-                  <p><strong>First Aired:</strong> {show.first_air_date || "N/A"}</p>
-                </div>
-              </div>
-
-              <div>
-                <h2 className="text-2xl font-semibold mb-2 text-gray-800">Description</h2>
-                <p className="text-gray-600 leading-relaxed">{show.overview || "No description available."}</p>
-              </div>
-            </div>
-          )
         )}
 
-        {/* RIGHT COLUMN — Voting Section */}
+        {/* RIGHT COLUMN — Voting */}
         <div className="bg-white rounded-2xl shadow-md p-6 flex flex-col gap-6">
-          <h2 className="text-2xl font-semibold text-gray-800">Submit Your Vote</h2>
+          {!userVote || isChangingVote ? (
+            <>
+              <h2 className="text-2xl font-semibold text-gray-800">Submit Your Vote</h2>
 
-          {episodes.length > 0 ? (
-            <select
-              className="border border-gray-300 rounded-md p-3 w-full"
-              value={selectedEpisode ?? ""}
-              onChange={(e) => setSelectedEpisode(Number(e.target.value))}
-            >
-              <option value="">-- Choose an episode --</option>
-              {episodes.map((ep) => (
-                <option key={ep.absolute_number} value={ep.absolute_number}>
-                  S{ep.season_number}E{ep.episode_number} — {ep.name}
-                </option>
-              ))}
-            </select>
+              {episodes.length > 0 ? (
+                <select
+                  className="border border-gray-300 rounded-md p-3 w-full"
+                  value={selectedEpisode ?? ""}
+                  onChange={(e) => setSelectedEpisode(Number(e.target.value))}
+                >
+                  <option value="">-- Choose an episode --</option>
+                  {episodes.map((ep) => (
+                    <option key={ep.absolute_number} value={ep.absolute_number}>
+                      S{ep.season_number}E{ep.episode_number} — {ep.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-gray-500 italic">Loading episodes...</p>
+              )}
+
+              <button
+                onClick={submitVote}
+                className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-md transition"
+              >
+                Submit Vote
+              </button>
+            </>
           ) : (
-            <p className="text-gray-500 italic">Loading episodes...</p>
+            <>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-2">Your Vote</h2>
+              {userEpisode ? (
+                <p className="text-lg text-gray-700">
+                  S{userEpisode.season_number}E{userEpisode.episode_number} — {userEpisode.name}
+                </p>
+              ) : (
+                <p className="text-gray-500 italic">Could not find episode.</p>
+              )}
+              <button
+                onClick={() => setIsChangingVote(true)}
+                className="bg-black hover:bg-gray-800 text-white font-medium py-3 px-4 rounded-md transition"
+              >
+                Change Vote
+              </button>
+            </>
           )}
 
-          <button
-            onClick={submitVote}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-md transition"
-          >
-            Submit Vote
-          </button>
+          {/* Average Visualization */}
+          <div className="mt-6 border-t pt-6 text-center relative">
+            <h3 className="text-xl font-semibold text-gray-800 mb-6">
+              When Does{" "}
+              <span className="italic text-blue-600">{show?.title}</span> Get Good?
+            </h3>
 
-          <div className="mt-6 border-t pt-4 text-center">
-            <h3 className="text-lg font-semibold text-gray-800">Average “Gets Good” Episode</h3>
-            <p className="text-4xl font-bold text-blue-600 mt-1">{average}</p>
+            <div className="relative w-full h-16 flex items-center justify-center">
+              <div className="w-3/4 h-[2px] bg-gray-400 relative">
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-black rounded-full"></div>
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-black rounded-full"></div>
+
+                <div
+                  className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-white shadow-md ${
+                    hasVotes ? "bg-blue-500" : "bg-red-500"
+                  }`}
+                  style={{
+                    left: `${positionPercent}%`,
+                    transform: "translate(-50%, -50%)",
+                  }}
+                ></div>
+
+                <div
+                  className={`absolute top-10 px-3 py-1 rounded-lg shadow text-sm whitespace-nowrap ${
+                    hasVotes
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-red-100 text-red-600"
+                  }`}
+                  style={{
+                    left: `${positionPercent}%`,
+                    transform: "translate(-50%, 0)",
+                  }}
+                >
+                  {hasVotes ? (
+                    <>
+                      S{averageEpisode?.season_number}E{averageEpisode?.episode_number} —{" "}
+                      {averageEpisode?.name}
+                      <div className="absolute left-1/2 -top-2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-blue-100"></div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-semibold text-red-600">N/A</p>
+                      <p className="text-gray-800">Vote to help us find out!</p>
+                      <div className="absolute left-1/2 -top-2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-red-100"></div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
