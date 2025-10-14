@@ -126,50 +126,12 @@ export default function Header() {
 
         {/* Account / Auth Buttons */}
         <div className="mt-3 sm:mt-0 flex-shrink-0 relative" ref={accountRef}>
-          {user ? (
-            <div className="relative">
-              <button
-                onClick={() => setAccountDropdown(!accountDropdown)}
-                className="px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-base font-medium transition"
-              >
-                Hi, {username || user.email}
-              </button>
-              {accountDropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50 overflow-hidden">
-                  <button
-                    onClick={() => { navigate("/account"); setAccountDropdown(false); }}
-                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                  >
-                    Account Details
-                  </button>
-                  <button
-                    onClick={() => { navigate("/voting-history"); setAccountDropdown(false); }}
-                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                  >
-                    Voting History
-                  </button>
-                  <button
-                    onClick={() => { navigate("/terms-of-use"); setAccountDropdown(false); }}
-                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                  >
-                    Terms of Use
-                  </button>
-                  <button
-                    onClick={() => { navigate("/privacy-policy"); setAccountDropdown(false); }}
-                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                  >
-                    Privacy Policy
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2 hover:bg-red-100 text-red-600 font-medium"
-                  >
-                    Log Out
-                  </button>
+              {user ? (
+                <div className="relative">
+                  <span>Hi, {username || "User"}</span>
+                  {/* Dropdown for Account, Logout */}
                 </div>
-              )}
-            </div>
-          ) : (
+              ) : (
             <div className="flex gap-2">
               <button
                 onClick={() => navigate("/login")}

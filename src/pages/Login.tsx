@@ -1,63 +1,56 @@
-// src/pages/Login.tsx
+// src/pages/LoginPage.tsx
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 
-export default function Login() {
+export default function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    setError("");
-    if (!email || !password) return setError("All fields are required");
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(false);
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return setError(error.message);
-
-    navigate("/account");
+    if (error) {
+      alert(error.message);
+    } else {
+      navigate("/"); // go to home after login
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-800">
-      <div className="bg-gray-100 p-8 rounded-md w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6 text-center">Log In</h1>
-
-        {error && <div className="text-red-600 mb-4">{error}</div>}
-
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full mb-4 px-4 py-2 border rounded"
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full mb-4 px-4 py-2 border rounded"
-        />
-
-        <button
-          onClick={handleLogin}
-          className="w-full py-2 bg-blue-600 text-white font-bold rounded hover:bg-blue-700"
-        >
-          Log In
-        </button>
-
-        <p className="mt-4 text-center text-gray-600">
-          Don't have an account?{" "}
-          <span
-            onClick={() => navigate("/signup")}
-            className="text-blue-600 cursor-pointer underline"
-          >
-            Sign Up
-          </span>
-        </p>
-      </div>
+    <div className="max-w-md mx-auto mt-16 p-6 bg-gray-800 text-white rounded shadow">
+      <h1 className="text-2xl font-bold mb-4 text-center">Log In</h1>
+      <input
+        type="email"
+        placeholder="Email"
+        className="w-full p-2 mb-4 rounded text-black"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <input
+        type="password"
+        placeholder="Password"
+        className="w-full p-2 mb-4 rounded text-black"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
+      <button
+        onClick={handleLogin}
+        className="w-full bg-blue-500 hover:bg-blue-600 py-2 rounded font-bold"
+        disabled={loading}
+      >
+        {loading ? "Logging in..." : "Log In"}
+      </button>
+      <p className="mt-4 text-center text-gray-300">
+        Don’t have an account?{" "}
+        <Link to="/signup" className="text-blue-400 underline">
+          Create an Account
+        </Link>
+      </p>
     </div>
   );
 }
