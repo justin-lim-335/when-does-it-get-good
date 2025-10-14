@@ -1,8 +1,8 @@
 // src/ShowPage.tsx
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { supabase } from "./lib/supabaseClient";
-import { useAuth } from "./context/AuthContext";
+import { supabase } from "../lib/supabaseClient";
+import { useAuth } from "../context/AuthContext";
 
 interface Episode {
   season_number: number;

@@ -91,7 +91,7 @@ export default function Header() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search shows..."
-            className="w-full px-4 py-3 rounded-md border border-gray-300 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full px-4 py-3 rounded-md border border-gray-300 text-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
           {showDropdown && suggestions.length > 0 && (
             <div className="absolute top-full mt-1 w-full bg-white rounded shadow-lg z-50 overflow-hidden">
@@ -111,7 +111,7 @@ export default function Header() {
                     className="w-12 h-16 object-cover rounded"
                   />
                   <div className="flex flex-col">
-                    <span className="font-medium">{show.title}</span>
+                    <span className="font-medium text-gray-800">{show.title}</span>
                     {show.first_air_date && (
                       <span className="text-sm text-gray-600">
                         {new Date(show.first_air_date).getFullYear()}

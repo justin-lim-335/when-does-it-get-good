@@ -48,7 +48,7 @@ export default function LoginPage() {
       <p className="mt-4 text-center text-gray-300">
         Don’t have an account?{" "}
         <Link to="/signup" className="text-blue-400 underline">
-          Create an Account
+          Sign Up
         </Link>
       </p>
     </div>
