@@ -209,12 +209,12 @@ export default function ShowPage() {
     : null;
 
 return (
-  <div className="min-h-screen bg-gray-50">
+  <div className="min-h-screen bg-gray-800">
     <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-2 gap-10">
       {/* LEFT COLUMN */}
       {!loading && show && (
         <div>
-          <h1 className="text-4xl font-bold mb-6 text-gray-900">{show.title}</h1>
+          <h1 className="text-4xl font-bold mb-6 text-gray-100">{show.title}</h1>
           <div className="flex flex-col sm:flex-row gap-8 mb-8">
             {show.poster_path && (
               <img
@@ -223,28 +223,27 @@ return (
                 className="rounded-xl shadow-lg w-64"
               />
             )}
-            <div className="flex flex-col justify-center text-gray-700 text-lg space-y-2">
+            <div className="flex flex-col justify-center text-gray-200 text-lg space-y-2">
               <p><strong>Year:</strong> {show.first_air_date ? new Date(show.first_air_date).getFullYear() : "N/A"}</p>
               <p><strong>Seasons:</strong> {show.number_of_seasons || "N/A"}</p>
               <p><strong>Episodes:</strong> {show.number_of_episodes || "N/A"}</p>
             </div>
           </div>
           <div>
-            <h2 className="text-2xl font-semibold mb-2 text-gray-800">Description</h2>
-            <p className="text-gray-600 leading-relaxed">{show.overview || "No description available."}</p>
+            <p className="text-gray-200 leading-relaxed">{show.overview || "No description available."}</p>
           </div>
         </div>
       )}
 
       {/* RIGHT COLUMN — Voting Section */}
-      <div className="bg-white rounded-2xl shadow-md p-6 flex flex-col gap-6">
+      <div className="bg-gray-500 rounded-2xl shadow-md p-6 flex flex-col gap-6">
         {!userVote || isChangingVote ? (
           <>
-            <h2 className="text-2xl font-semibold text-gray-800">Submit Your Vote</h2>
+            <h2 className="text-2xl font-semibold text-gray-200">Submit Your Vote</h2>
 
             {episodes.length > 0 ? (
               <select
-                className="border border-gray-300 rounded-md p-3 w-full"
+                className="border border-gray-300 rounded-md p-3 w-full text-gray-800 bg-white"
                 value={selectedEpisode ?? ""}
                 onChange={(e) => setSelectedEpisode(Number(e.target.value))}
               >
@@ -256,25 +255,25 @@ return (
                 ))}
               </select>
             ) : (
-              <p className="text-gray-500 italic">Loading episodes...</p>
+              <p className="text-gray-200 italic">Loading episodes...</p>
             )}
 
             <button
               onClick={submitVote}
-              className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-md transition"
+              className="bg-blue-500 hover:bg-blue-600 text-gray-200 font-medium py-3 px-4 rounded-md transition"
             >
               Submit Vote
             </button>
           </>
         ) : (
           <>
-            <h2 className="text-2xl font-semibold text-gray-800 mb-2">Your Vote</h2>
+            <h2 className="text-2xl font-semibold text-gray-200 mb-2">Your Vote</h2>
             {userEpisode ? (
-              <p className="text-lg text-gray-700">
+              <p className="text-lg text-gray-200">
                 S{userEpisode.season_number}E{userEpisode.episode_number} — {userEpisode.name}
               </p>
             ) : (
-              <p className="text-gray-500 italic">Could not find episode.</p>
+              <p className="text-gray-200 italic">Could not find episode.</p>
             )}
             <button
               onClick={() => setIsChangingVote(true)}
@@ -287,8 +286,8 @@ return (
 
         {/* Average "Gets Good" line */}
         <div className="mt-6 border-t pt-6 text-center relative">
-          <h3 className="text-xl font-semibold text-gray-800 mb-6">
-            When Does <span className="italic text-blue-600">{show?.title}</span> Get Good?
+          <h3 className="text-xl font-semibold text-gray-200 mb-6">
+            When Does <span className="italic text-blue-400">{show?.title}</span> Get Good?
           </h3>
 
           <div className="relative w-full h-16 flex items-center justify-center">

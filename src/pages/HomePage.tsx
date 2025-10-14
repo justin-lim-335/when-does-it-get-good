@@ -72,15 +72,22 @@ export default function HomePage() {
     return <p className="text-center mt-8 text-lg font-medium">No shows found.</p>;
 
   return (
-    <div className="max-w-[1400px] mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-4 text-center">Here to answer the question:</h1>
-      <h2 className="text-3xl font-bold mb-12 text-center">WHEN DOES IT GET GOOD?</h2>
-
-      <Carousel title="Recently Released" shows={data.recentlyReleased} />
-      <Carousel title="Recently Voted" shows={data.recentlyVoted} />
-      <Carousel title="Most Voted" shows={data.mostVoted} />
-      <Carousel title="Popular Anime" shows={data.popularAnime} />
-      <Carousel title="Popular Dramas" shows={data.popularDramas} />
+    <div className="bg-gray-800 min-h-screen w-full">
+      <div className="max-w-[1400px] mx-auto px-4 py-8">
+      <h1 className="text-2xl font-heading text-center mb-2 tracking-wide text-gray-300">
+        Here to answer the question:
+      </h1>
+      <h2 className="text-5xl font-heading font-extrabold text-center mb-12 
+        bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent drop-shadow-lg">
+        WHEN DOES IT GET GOOD?
+      </h2>
+        <Carousel title="Recently Released" shows={data.recentlyReleased} />
+        <Carousel title="Recently Voted" shows={data.recentlyVoted} />
+        <Carousel title="Most Voted" shows={data.mostVoted} />
+        <Carousel title="Popular Anime" shows={data.popularAnime} />
+        <Carousel title="Popular Dramas" shows={data.popularDramas} />
+      </div>
     </div>
   );
+
 }

@@ -12,6 +12,20 @@ html, body, #root {
   box-sizing: border-box;
 }
 
+/* 🌙 Global Dark Theme Defaults */
+html, body {
+  @apply bg-gray-900 font-sans text-gray-100 transition-colors duration-300;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  @apply font-heading font-semibold;
+}
+
+/* Optional: smooth color changes when toggling themes */
+* {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
 /* Make all elements use border-box by default */
 *, *::before, *::after {
   box-sizing: inherit;
@@ -47,10 +61,7 @@ a {
 
 /* Simple card style for reusable components */
 .card {
-  padding: 1.5rem;
-  background-color: #f9f9f9;
-  border-radius: 0.5rem;
-  box-shadow: 0 0 6px rgba(0,0,0,0.05);
+  @apply bg-gray-800 border border-gray-700 rounded-2xl p-4 shadow-md;
 }
 
 /* Read-the-docs style (optional) */
@@ -63,3 +74,47 @@ a {
 .mb-4 { margin-bottom: 1rem; }
 .mb-8 { margin-bottom: 2rem; }
 .pt-4 { padding-top: 1rem; }
+
+/* 🧭 Buttons */
+.btn {
+  @apply font-medium rounded-md px-4 py-2 transition;
+}
+
+.btn-primary {
+  @apply bg-blue-500 hover:bg-blue-600 text-white;
+}
+
+.btn-secondary {
+  @apply bg-gray-700 hover:bg-gray-600 text-gray-100;
+}
+
+.btn-danger {
+  @apply bg-red-600 hover:bg-red-700 text-white;
+}
+
+/* 🪶 Inputs and search fields */
+.input {
+  @apply bg-gray-800 border border-gray-700 text-gray-100 placeholder-gray-400 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500;
+}
+
+/* 🧩 Dropdowns / modals */
+.dropdown {
+  @apply bg-gray-800 text-gray-100 border border-gray-700 rounded-lg shadow-lg;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradientShift 15s ease infinite;
+}

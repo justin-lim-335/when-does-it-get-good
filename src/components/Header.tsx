@@ -1,11 +1,11 @@
 // src/components/Header.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
-import { useAuth } from "../context/AuthContext"; // ✅ import the context
+import { useAuth } from "../context/AuthContext";
 import logo from "../assets/logo.png";
 
-const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = process.env.VITE_API_BASE_URL;
 
 interface Show {
   tmdb_id: number;
@@ -16,12 +16,15 @@ interface Show {
 
 export default function Header() {
   const navigate = useNavigate();
-  const { user } = useAuth(); // ✅ global user state
+  const { user, username } = useAuth();
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Show[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [accountDropdown, setAccountDropdown] = useState(false);
 
-  // ✅ Handle search logic
+  const accountRef = useRef<HTMLDivElement>(null);
+
+  // Search suggestions
   useEffect(() => {
     if (!query) {
       setSuggestions([]);
@@ -32,10 +35,10 @@ export default function Header() {
     const fetchSuggestions = async () => {
       try {
         const res = await fetch(
-          `${VITE_API_BASE_URL}/search?query=${encodeURIComponent(query)}`
+          `${API_BASE_URL}/search?query=${encodeURIComponent(query)}`
         );
         const data = await res.json();
-        setSuggestions(data.slice(0, 6)); // limit dropdown
+        setSuggestions(data.results?.slice(0, 6) || []);
         setShowDropdown(true);
       } catch (err) {
         console.error("Failed to fetch suggestions:", err);
@@ -51,11 +54,22 @@ export default function Header() {
     setShowDropdown(false);
   };
 
-  // ✅ Logout handler
+  // Logout handler
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/");
   };
+
+  // Close account dropdown if clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (accountRef.current && !accountRef.current.contains(e.target as Node)) {
+        setAccountDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <header className="w-full bg-gray-500 shadow-md">
@@ -110,22 +124,66 @@ export default function Header() {
           )}
         </div>
 
-        {/* Login / Logout Button */}
-        <div className="mt-3 sm:mt-0 flex-shrink-0">
+        {/* Account / Auth Buttons */}
+        <div className="mt-3 sm:mt-0 flex-shrink-0 relative" ref={accountRef}>
           {user ? (
-            <button
-              onClick={handleLogout}
-              className="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-md text-base font-medium transition"
-            >
-              Log Out
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setAccountDropdown(!accountDropdown)}
+                className="px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-base font-medium transition"
+              >
+                Hi, {username || user.email}
+              </button>
+              {accountDropdown && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50 overflow-hidden">
+                  <button
+                    onClick={() => { navigate("/account"); setAccountDropdown(false); }}
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                  >
+                    Account Details
+                  </button>
+                  <button
+                    onClick={() => { navigate("/voting-history"); setAccountDropdown(false); }}
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                  >
+                    Voting History
+                  </button>
+                  <button
+                    onClick={() => { navigate("/terms-of-use"); setAccountDropdown(false); }}
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                  >
+                    Terms of Use
+                  </button>
+                  <button
+                    onClick={() => { navigate("/privacy-policy"); setAccountDropdown(false); }}
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                  >
+                    Privacy Policy
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="block w-full text-left px-4 py-2 hover:bg-red-100 text-red-600 font-medium"
+                  >
+                    Log Out
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
-            <button
-              onClick={() => navigate("/login")}
-              className="px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-base font-medium transition"
-            >
-              Log In
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => navigate("/login")}
+                className="px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-base font-medium transition"
+              >
+                Log In
+              </button>
+              <button
+                onClick={() => navigate("/signup")}
+                className="px-5 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-md text-base font-medium transition"
+              >
+                Sign Up
+              </button>
+            </div>
           )}
         </div>
       </div>

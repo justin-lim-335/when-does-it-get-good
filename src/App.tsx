@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Header from "./components/Header";
 import HomePage from "./pages/HomePage";
 import ShowPage from "./ShowPage";
-import Login from "./Login";
+import Login from "./pages/Login";
 
 function App() {
   return (
