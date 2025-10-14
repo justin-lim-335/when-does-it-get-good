@@ -1,90 +1,116 @@
-// src/pages/SignUpPage.tsx
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 
-export default function SignUpPage() {
+export default function SignUp() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleSignUp = async () => {
-    if (password.length < 8) return alert("Password must be at least 8 characters.");
-    if (password !== confirmPassword) return alert("Passwords do not match.");
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
 
-    setLoading(true);
-    const { data: user, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-
-    if (error) {
-      setLoading(false);
-      alert(error.message);
+    // ✅ Basic validation
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
       return;
     }
 
-    // Insert username into users table
-    const { error: profileError } = await supabase.from("users").insert({
-      id: user.user?.id,
-      email,
-      username,
-    });
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
 
-    setLoading(false);
-    if (profileError) {
-      alert("Failed to save username: " + profileError.message);
-    } else {
-      navigate("/"); // go to home after signup
+    if (!username.trim()) {
+      setError("Please choose a username.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // ✅ Sign up user with username stored in user_metadata
+      const { data, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { username }, // 👈 store username in Supabase Auth metadata
+        },
+      });
+
+      if (authError) throw authError;
+
+      // ✅ Success message
+      alert("Account created! Please check your email to confirm your address.");
+      navigate("/login");
+    } catch (err: any) {
+      console.error("Signup error:", err);
+      setError(err.message || "Failed to sign up. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-16 p-6 bg-gray-800 text-white rounded shadow">
+    <div className="max-w-md mx-auto mt-20 p-6 bg-gray-800 rounded-md shadow-md text-white">
       <h1 className="text-2xl font-bold mb-4 text-center">Sign Up</h1>
-      <input
-        type="text"
-        placeholder="Username"
-        className="w-full p-2 mb-4 rounded text-black"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-      />
-      <input
-        type="email"
-        placeholder="Email"
-        className="w-full p-2 mb-4 rounded text-black"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <input
-        type="password"
-        placeholder="Password (min 8 chars)"
-        className="w-full p-2 mb-4 rounded text-black"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
-      <input
-        type="password"
-        placeholder="Confirm Password"
-        className="w-full p-2 mb-4 rounded text-black"
-        value={confirmPassword}
-        onChange={(e) => setConfirmPassword(e.target.value)}
-      />
-      <button
-        onClick={handleSignUp}
-        className="w-full bg-green-500 hover:bg-green-600 py-2 rounded font-bold"
-        disabled={loading}
-      >
-        {loading ? "Signing up..." : "Sign Up"}
-      </button>
-      <p className="mt-4 text-center text-gray-300">
+      <form onSubmit={handleSignUp} className="flex flex-col gap-4">
+        <input
+          type="text"
+          placeholder="Username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          className="p-2 rounded text-black"
+          required
+        />
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="p-2 rounded text-black"
+          required
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="p-2 rounded text-black"
+          required
+        />
+        <input
+          type="password"
+          placeholder="Confirm Password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          className="p-2 rounded text-black"
+          required
+        />
+
+        {error && <p className="text-red-400">{error}</p>}
+
+        <button
+          type="submit"
+          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded"
+          disabled={loading}
+        >
+          {loading ? "Signing Up..." : "Sign Up"}
+        </button>
+      </form>
+      <p className="mt-4 text-center text-gray-400">
         Already have an account?{" "}
-        <Link to="/login" className="text-blue-400 underline">
+        <span
+          className="text-blue-400 cursor-pointer"
+          onClick={() => navigate("/login")}
+        >
           Log In
-        </Link>
+        </span>
       </p>
     </div>
   );
