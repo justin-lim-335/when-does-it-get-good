@@ -42,7 +42,7 @@ export default function SignUp() {
         email,
         password,
         options: {
-          emailRedirectTo: `/welcome`, // redirect after confirmation
+          emailRedirectTo: `www.whendoesitgetgood.net/welcome`, // redirect after confirmation
         },
       });
 

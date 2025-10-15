@@ -1,7 +1,16 @@
 import { Router } from "express";
+import cors from "cors";
 import fetch from "node-fetch";
 
 const router = Router();
+
+// CORS middleware for this route
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+router.use(cors({
+  origin: [FRONTEND_URL],
+  methods: ["GET"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
 
 // GET /api/search?query=breaking+bad
 router.get("/", async (req, res) => {
@@ -12,7 +21,7 @@ router.get("/", async (req, res) => {
     const response = await fetch(
       `https://api.themoviedb.org/3/search/tv?api_key=${process.env.TMDB_API_KEY}&query=${encodeURIComponent(query)}`
     );
-    const data = (await response.json()) as { results?: any[] };
+    const data = await response.json() as { results?: any[] };
 
     const results = data.results?.map((show: any) => ({
       id: show.id,
