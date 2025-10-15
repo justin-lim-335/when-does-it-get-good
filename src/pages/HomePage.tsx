@@ -66,10 +66,10 @@ export default function HomePage() {
   }, [fetchHomepageData]);
 
   if (loading)
-    return <p className="text-center mt-8 text-lg font-medium">Loading...</p>;
+    return <p className="text-center bg-gray-800 mt-8 text-lg font-medium">Loading...</p>;
 
   if (!data)
-    return <p className="text-center mt-8 text-lg font-medium">No shows found.</p>;
+    return <p className="text-center bg-gray-800 mt-8 text-lg font-medium">No shows found.</p>;
 
   return (
     <div className="bg-gray-800 min-h-screen w-full">
