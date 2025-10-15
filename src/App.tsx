@@ -9,6 +9,7 @@ import Privacy from "./pages/PrivacyPolicy";
 import Terms from "./pages/TermsOfUse";
 import History from "./pages/VotingHistory";
 import Welcome from "./pages/Welcome";
+import Waiting from "./pages/Waiting";
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
             <Route path="/terms" element={<Terms />} />
             <Route path="/history" element={<History />} />
             <Route path="/welcome" element={<Welcome />} />
+            <Route path="/waiting" element={<Waiting />} />
           </Routes>
         </main>
       </div>

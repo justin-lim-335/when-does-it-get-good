@@ -42,7 +42,7 @@ export default function SignUp() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/waiting-confirmation`, // redirect after confirmation
+          emailRedirectTo: `/welcome`, // redirect after confirmation
         },
       });
 
@@ -50,7 +50,7 @@ export default function SignUp() {
       if (!user) throw new Error("Failed to create user.");
 
       // ✅ Only redirect to the waiting page; do NOT insert username here
-      navigate("/waiting-confirmation");
+      navigate("/waiting");
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Error creating account");
