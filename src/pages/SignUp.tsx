@@ -15,103 +15,93 @@ export default function SignUp() {
     e.preventDefault();
     setError(null);
 
-    // ✅ Basic validation
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
     }
-
     if (password.length < 8) {
       setError("Password must be at least 8 characters.");
       return;
     }
-
-    if (!username.trim()) {
-      setError("Please choose a username.");
+    if (!username) {
+      setError("Please enter a username.");
       return;
     }
 
     setLoading(true);
 
     try {
-      // ✅ Sign up user with username stored in user_metadata
+      // 1️⃣ Create user in Supabase Auth
       const { data, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: { username }, // 👈 store username in Supabase Auth metadata
+          emailRedirectTo: `${window.location.origin}/welcome`, // after confirmation
         },
       });
-
       if (authError) throw authError;
+      if (!data?.user) throw new Error("No user returned from signup.");
+      const userId = data.user.id;
 
-      // ✅ Success message
-      alert("Account created! Please check your email to confirm your address.");
+      // 2️⃣ Insert username into public.users
+      const { error: profileError } = await supabase
+        .from("users")
+        .insert([{ id: userId, username }]);
+
+      if (profileError) throw profileError;
+
+      alert(
+        "Account created! Please check your email to confirm your account."
+      );
       navigate("/login");
     } catch (err: any) {
-      console.error("Signup error:", err);
-      setError(err.message || "Failed to sign up. Please try again.");
+      setError(err.message || "Failed to sign up.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-20 p-6 bg-gray-800 rounded-md shadow-md text-white">
+    <div className="max-w-md mx-auto mt-16 p-6 bg-white rounded shadow">
       <h1 className="text-2xl font-bold mb-4 text-center">Sign Up</h1>
+      {error && <p className="text-red-500 mb-4">{error}</p>}
       <form onSubmit={handleSignUp} className="flex flex-col gap-4">
         <input
           type="text"
           placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="p-2 rounded text-black"
-          required
+          className="border px-3 py-2 rounded"
         />
         <input
           type="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="p-2 rounded text-black"
-          required
+          className="border px-3 py-2 rounded"
         />
         <input
           type="password"
-          placeholder="Password"
+          placeholder="Password (min 8 chars)"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="p-2 rounded text-black"
-          required
+          className="border px-3 py-2 rounded"
         />
         <input
           type="password"
           placeholder="Confirm Password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
-          className="p-2 rounded text-black"
-          required
+          className="border px-3 py-2 rounded"
         />
-
-        {error && <p className="text-red-400">{error}</p>}
-
         <button
           type="submit"
-          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded"
           disabled={loading}
+          className="bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
         >
           {loading ? "Signing Up..." : "Sign Up"}
         </button>
       </form>
-      <p className="mt-4 text-center text-gray-400">
-        Already have an account?{" "}
-        <span
-          className="text-blue-400 cursor-pointer"
-          onClick={() => navigate("/login")}
-        >
-          Log In
-        </span>
-      </p>
     </div>
   );
 }

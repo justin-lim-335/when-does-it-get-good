@@ -20,6 +20,12 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TMDB_API_KEY = process.env.TMDB_API_KEY || process.env.VITE_TMDB_API_KEY;
 
+// Use service key for admin access
+const supabaseAdmin = createClient(
+  process.env.VITE_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error("Missing Supabase URL or Service Role Key!");
 }
@@ -348,6 +354,32 @@ app.get("/shows/:tmdb_id/average", async (req, res) => {
   } catch (err: any) {
     console.error("Average calculation error:", err);
     res.status(500).json({ error: err.message || "Internal server error" });
+  }
+});
+
+// ✅ Delete user route
+app.post("/api/delete-user", async (req, res) => {
+  try {
+    const { userId, token } = req.body;
+
+    if (!userId || !token) {
+      return res.status(400).json({ error: "Missing userId or token." });
+    }
+
+    // Verify the access token before deleting
+    const { data: session, error: verifyError } = await supabaseAdmin.auth.getUser(token);
+    if (verifyError || session.user.id !== userId) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    // Perform deletion via admin API
+    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    if (deleteError) throw deleteError;
+
+    return res.status(200).json({ message: "User deleted successfully." });
+  } catch (err) {
+    console.error("Delete error:", err);
+    return res.status(500).json({ error: "Server error during deletion." });
   }
 });
 

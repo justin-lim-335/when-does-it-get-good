@@ -1,60 +1,80 @@
-// src/pages/Account.tsx
-import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabaseClient";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabaseClient";
 
-export default function Account() {
+export default function AccountPage() {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<{ username: string; email: string } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      const user = supabase.auth.getUser();
-      if (!user) return navigate("/login");
+  const handleDeleteAccount = async () => {
+    setLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || !session.user) throw new Error("No active session.");
 
-      const { data } = await supabase.from("profiles").select("*").eq("id", (await user).data.user?.id).single();
-      if (!data) return navigate("/login");
+      const response = await fetch("/api/delete-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: session.user.id,
+          token: session.access_token
+        })
+      });
 
-      setProfile({ username: data.username, email: (await user).data.user?.email || "" });
-    };
-    fetchProfile();
-  }, []);
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Deletion failed.");
 
-  const handleChangePassword = async () => {
-    alert("Password change placeholder (implement later)");
+      alert("Account deleted successfully.");
+      navigate("/");
+    } catch (err: any) {
+      console.error("Deletion error:", err);
+      setMessage(err.message || "Failed to delete account.");
+    } finally {
+      setLoading(false);
+      setShowConfirm(false);
+    }
   };
 
-  if (!profile) return <div>Loading...</div>;
-
   return (
-    <div className="min-h-screen flex max-w-[1200px] mx-auto p-4">
-      {/* Sidebar */}
-      <aside className="w-64 mr-8">
-        <nav className="flex flex-col gap-2">
-          <a href="/account" className="hover:underline">Account Details</a>
-          <a href="/voting-history" className="hover:underline">Voting History</a>
-          <a href="/terms-of-use" className="hover:underline">Terms of Use</a>
-          <a href="/privacy-policy" className="hover:underline">Privacy Policy</a>
-        </nav>
-      </aside>
+    <div className="max-w-3xl mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-4">Account Settings</h1>
 
-      {/* Main */}
-      <main className="flex-1 bg-gray-100 p-6 rounded">
-        <h1 className="text-2xl font-bold mb-4">Hi, {profile.username}</h1>
+      {/* Delete Account Button */}
+      <button
+        onClick={() => setShowConfirm(true)}
+        className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md"
+      >
+        Delete Account
+      </button>
 
-        <div className="space-y-4">
-          <div>Email: {profile.email}</div>
-          <div>
-            Password: ********
-            <button
-              onClick={handleChangePassword}
-              className="ml-2 px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              Change
-            </button>
+      {/* Confirmation Modal */}
+      {showConfirm && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded-md shadow-md max-w-sm w-full">
+            <h2 className="text-xl font-bold mb-4">Confirm Deletion</h2>
+            <p className="mb-4">Are you sure you want to delete your account? This action is permanent.</p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                className="px-4 py-2 bg-red-500 rounded-md text-white hover:bg-red-600"
+                disabled={loading}
+              >
+                {loading ? "Deleting..." : "Delete"}
+              </button>
+            </div>
           </div>
         </div>
-      </main>
+      )}
+
+      {message && <p className="text-red-500 mt-4">{message}</p>}
     </div>
   );
 }

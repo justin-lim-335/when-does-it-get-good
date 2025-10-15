@@ -6,8 +6,9 @@ import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import Account from "./pages/Account";
 import Privacy from "./pages/PrivacyPolicy";
-import Terms from "./pages/TermsofUse";
+import Terms from "./pages/TermsOfUse";
 import History from "./pages/VotingHistory";
+import Welcome from "./pages/Welcome";
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/history" element={<History />} />
+            <Route path="/welcome" element={<Welcome />} />
           </Routes>
         </main>
       </div>
