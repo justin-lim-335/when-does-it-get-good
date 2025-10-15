@@ -41,26 +41,24 @@ export default function SignUp() {
       const { data: { user }, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/waiting-confirmation`, // redirect after confirmation
+        },
       });
+
       if (authError) throw authError;
       if (!user) throw new Error("Failed to create user.");
 
-      // 2️⃣ Insert username into public.users using service role key (backend recommended)
-      //    Here, using frontend requires RLS allowing auth_id = auth.uid()
-      const { error: profileError } = await supabase
-        .from("users")
-        .insert([{ auth_id: user.id, username }]);
-      if (profileError) throw profileError;
-
-      alert("Account created! Please check your email to confirm.");
-      navigate("/login");
+      // ✅ Only redirect to the waiting page; do NOT insert username here
+      navigate("/waiting-confirmation");
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Database error saving new user");
+      setError(err.message || "Error creating account");
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="max-w-md mx-auto mt-16 p-6 bg-gray-900 text-white rounded shadow">
