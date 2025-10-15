@@ -20,24 +20,26 @@ interface HomepageData {
 export default function HomePage() {
   const [data, setData] = useState<HomepageData | null>(null);
   const [loading, setLoading] = useState(true);
-  const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
+  const API_BASE =
+    import.meta.env.VITE_API_BASE_URL || "http://localhost:3001/api";
 
-  // Helper to normalize any show object
   const normalizeShow = (s: any): Show => ({
     tmdb_id: s.tmdb_id || s.id,
     title: s.title || s.name || "Untitled",
-    poster_path: s.poster_path || s.shows?.poster_path || "/placeholder.png",
-    first_air_date: s.first_air_date || s.shows?.first_air_date || "Unknown",
+    poster_path: s.poster_path || "/placeholder.png",
+    first_air_date: s.first_air_date || "Unknown",
   });
 
-  // Fetch homepage data
   const fetchHomepageData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/shows/popular`);
+      const res = await fetch(`${API_BASE}/shows/popular`, {
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!res.ok) throw new Error(`API error ${res.status}`);
       const json = await res.json();
 
-      // Normalize and deduplicate recently voted shows
       const seenRecentlyVoted = new Set<number>();
       const dedupedRecentlyVoted: any[] = [];
       (json.recentlyVoted || []).forEach((s: any) => {
@@ -55,11 +57,11 @@ export default function HomePage() {
         popularDramas: (json.popularDramas || []).slice(0, 24).map(normalizeShow),
       });
     } catch (err) {
-      console.error("Failed to fetch homepage data:", err);
+      console.error("❌ Failed to fetch homepage data:", err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [API_BASE]);
 
   useEffect(() => {
     fetchHomepageData();
@@ -74,13 +76,14 @@ export default function HomePage() {
   return (
     <div className="bg-gray-800 min-h-screen w-full">
       <div className="max-w-[1400px] mx-auto px-4 py-8">
-      <h1 className="text-2xl font-heading text-center mb-2 tracking-wide text-gray-300">
-        Here to answer the question:
-      </h1>
-      <h2 className="text-5xl font-heading font-extrabold text-center mb-12 
-        bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent drop-shadow-lg">
-        WHEN DOES IT GET GOOD?
-      </h2>
+        <h1 className="text-2xl font-heading text-center mb-2 tracking-wide text-gray-300">
+          Here to answer the question:
+        </h1>
+        <h2 className="text-5xl font-heading font-extrabold text-center mb-12 
+          bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent drop-shadow-lg">
+          WHEN DOES IT GET GOOD?
+        </h2>
+
         <Carousel title="Recently Released" shows={data.recentlyReleased} />
         <Carousel title="Recently Voted" shows={data.recentlyVoted} />
         <Carousel title="Most Voted" shows={data.mostVoted} />
@@ -89,5 +92,4 @@ export default function HomePage() {
       </div>
     </div>
   );
-
 }

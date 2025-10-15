@@ -1,10 +1,10 @@
 import { Router } from "express";
-import cors from "cors";
 import fetch from "node-fetch";
+import cors from "cors";
 
 const router = Router();
 
-// CORS middleware for this route
+// Allow requests only from frontend URL
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 router.use(cors({
   origin: [FRONTEND_URL],
@@ -32,6 +32,7 @@ router.get("/", async (req, res) => {
 
     res.json({ results });
   } catch (err) {
+    console.error("TMDb fetch failed:", err);
     res.status(500).json({ error: "TMDb fetch failed" });
   }
 });
