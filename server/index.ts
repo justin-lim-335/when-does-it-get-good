@@ -2,6 +2,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import signupUserRouter from "./routes/signup-user"
 import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "./supabase";
 
@@ -62,6 +63,9 @@ async function getUserIdFromAuthHeader(req: express.Request): Promise<string | n
 app.get("/", (req, res) => {
   res.send("Backend is running and connected to Supabase ✅");
 });
+
+// Signup user route
+app.use("/signup-user", signupUserRouter);
 
 // Search shows by title (Supabase + fallback to TMDb)
 app.get("/shows/search", async (req, res) => {

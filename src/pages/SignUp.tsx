@@ -1,9 +1,13 @@
+// src/pages/SignUp.tsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 export default function SignUp() {
   const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -19,40 +23,37 @@ export default function SignUp() {
       setError("Passwords do not match.");
       return;
     }
+
     if (password.length < 8) {
       setError("Password must be at least 8 characters.");
-      return;
-    }
-    if (!username) {
-      setError("Please enter a username.");
       return;
     }
 
     setLoading(true);
 
     try {
-      // 1️⃣ Create user in Supabase Auth
+      // 1️⃣ Sign up user with Supabase Auth
       const { data, error: authError } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/welcome`, // after confirmation
-        },
       });
       if (authError) throw authError;
-      if (!data?.user) throw new Error("No user returned from signup.");
-      const userId = data.user.id;
+      const user = data?.user;
+      if (!user) throw new Error("No user returned from signup.");
 
-      // 2️⃣ Insert username into public.users
-      const { error: profileError } = await supabase
-        .from("users")
-        .insert([{ id: userId, username }]);
+      // 2️⃣ Insert username into public.users via backend
+      const res = await fetch(`${API_BASE_URL}/signup-user`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ auth_id: user.id, username }),
+      });
 
-      if (profileError) throw profileError;
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to save username");
+      }
 
-      alert(
-        "Account created! Please check your email to confirm your account."
-      );
+      alert("Account created! Please check your email to confirm.");
       navigate("/login");
     } catch (err: any) {
       setError(err.message || "Failed to sign up.");
@@ -62,46 +63,82 @@ export default function SignUp() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-16 p-6 bg-white rounded shadow">
-      <h1 className="text-2xl font-bold mb-4 text-center">Sign Up</h1>
-      {error && <p className="text-red-500 mb-4">{error}</p>}
-      <form onSubmit={handleSignUp} className="flex flex-col gap-4">
-        <input
-          type="text"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          className="border px-3 py-2 rounded"
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="border px-3 py-2 rounded"
-        />
-        <input
-          type="password"
-          placeholder="Password (min 8 chars)"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="border px-3 py-2 rounded"
-        />
-        <input
-          type="password"
-          placeholder="Confirm Password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          className="border px-3 py-2 rounded"
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
-        >
-          {loading ? "Signing Up..." : "Sign Up"}
-        </button>
-      </form>
+    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center px-4">
+      <div className="max-w-md w-full bg-gray-800 rounded-lg shadow-lg p-8">
+        <h1 className="text-3xl font-bold mb-6 text-center">Sign Up</h1>
+
+        {error && (
+          <div className="mb-4 text-red-400 font-medium text-center">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSignUp} className="space-y-4">
+          <div>
+            <label className="block mb-1 font-medium">Username</label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              className="w-full px-4 py-2 rounded-md bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+            />
+          </div>
+
+          <div>
+            <label className="block mb-1 font-medium">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full px-4 py-2 rounded-md bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+            />
+          </div>
+
+          <div>
+            <label className="block mb-1 font-medium">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={8}
+              className="w-full px-4 py-2 rounded-md bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+            />
+          </div>
+
+          <div>
+            <label className="block mb-1 font-medium">Confirm Password</label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              minLength={8}
+              className="w-full px-4 py-2 rounded-md bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded-md font-bold text-white transition"
+          >
+            {loading ? "Signing up..." : "Sign Up"}
+          </button>
+        </form>
+
+        <div className="mt-4 text-center text-gray-400">
+          Already have an account?{" "}
+          <span
+            className="text-blue-400 cursor-pointer hover:underline"
+            onClick={() => navigate("/login")}
+          >
+            Log In
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
