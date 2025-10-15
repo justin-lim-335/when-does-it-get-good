@@ -14,6 +14,8 @@ export default function SignUp() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
+  const [confirmTouched, setConfirmTouched] = useState(false);
 
   // Password validation helpers
   const passwordValid = password.length >= 8;
@@ -81,23 +83,27 @@ export default function SignUp() {
           onChange={(e) => setEmail(e.target.value)}
         />
 
-        {/* Password Field */}
-        <div className="relative">
-          <input
-            type={showPassword ? "text" : "password"}
-            placeholder="Password"
-            className="w-full p-2 rounded text-black pr-10"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-2 top-2 text-gray-600 hover:text-gray-800"
-          >
-            {showPassword ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
-          </button>
-        </div>
+      {/* Password Field */}
+      <div className="relative">
+        <input
+          type={showPassword ? "text" : "password"}
+          placeholder="Password"
+          className="w-full p-2 rounded text-black pr-10"
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            if (!passwordTouched) setPasswordTouched(true);
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => setShowPassword(!showPassword)}
+          className="absolute right-2 top-2 text-gray-600 hover:text-gray-800"
+        >
+          {showPassword ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+        </button>
+      </div>
+      {passwordTouched && password.trim().length > 0 && (
         <div className="flex items-center gap-2 text-sm mb-2">
           {passwordValid ? (
             <CheckIcon className="w-4 h-4 text-green-500" />
@@ -108,24 +114,29 @@ export default function SignUp() {
             At least 8 characters
           </span>
         </div>
+      )}
 
-        {/* Confirm Password Field */}
-        <div className="relative">
-          <input
-            type={showConfirmPassword ? "text" : "password"}
-            placeholder="Confirm Password"
-            className="w-full p-2 rounded text-black pr-10"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-          />
-          <button
-            type="button"
-            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute right-2 top-2 text-gray-600 hover:text-gray-800"
-          >
-            {showConfirmPassword ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
-          </button>
-        </div>
+      {/* Confirm Password Field */}
+      <div className="relative">
+        <input
+          type={showConfirmPassword ? "text" : "password"}
+          placeholder="Confirm Password"
+          className="w-full p-2 rounded text-black pr-10"
+          value={confirmPassword}
+          onChange={(e) => {
+            setConfirmPassword(e.target.value);
+            if (!confirmTouched) setConfirmTouched(true);
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+          className="absolute right-2 top-2 text-gray-600 hover:text-gray-800"
+        >
+          {showConfirmPassword ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+        </button>
+      </div>
+      {confirmTouched && confirmPassword.trim().length > 0 && (
         <div className="flex items-center gap-2 text-sm mb-2">
           {confirmValid ? (
             <CheckIcon className="w-4 h-4 text-green-500" />
@@ -136,6 +147,8 @@ export default function SignUp() {
             {confirmPassword ? "Passwords match" : "Confirm password"}
           </span>
         </div>
+      )}
+
 
         {error && <p className="text-red-400 text-center">{error}</p>}
 

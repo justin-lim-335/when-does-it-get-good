@@ -10,7 +10,7 @@ router.get("/", async (req, res) => {
 
   try {
     const response = await fetch(
-      `https://api.themoviedb.org/3/search/tv?api_key=${process.env.TMDB_API_KEY}&query=${encodeURIComponent(query)}`
+      `https://api.themoviedb.org/3/search/tv?api_key=${process.env.VITE_TMDB_API_KEY}&query=${encodeURIComponent(query)}`
     );
     const data = (await response.json()) as { results?: any[] };
 
