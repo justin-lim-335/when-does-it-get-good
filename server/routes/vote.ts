@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { supabase } from "../supabase";
+import { supabaseAdmin } from "../supabase";
 
 const router = Router();
 
@@ -12,7 +12,7 @@ router.post("/", async (req, res) => {
   }
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("votes")
       .insert([{ show_id: showId, episode, user_id: userId || null }]);
 
