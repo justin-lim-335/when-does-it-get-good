@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
+import logo from "../assets/logo.png";
 import { FaEye as EyeIcon, FaEyeSlash as EyeOffIcon } from "react-icons/fa6";
 
 export default function SignUp() {
@@ -52,13 +53,16 @@ export default function SignUp() {
     }
   };
 
-  const getIndicatorColor = (valid: boolean | undefined) =>
-    valid === undefined ? "bg-gray-400" : valid ? "bg-green-500" : "bg-red-500";
+    // Helper for text colors
+  const getTextColor = (valid?: boolean) => {
+    if (valid === undefined) return "text-gray-400";
+    return valid ? "text-green-400" : "text-red-400";
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-800 px-4">
       {/* Logo */}
-      <img src="/logo.png" alt="Site Logo" className="w-32 h-auto mb-8" />
+      <img src={logo} alt="Site Logo" className="w-32 h-auto mb-8" />
 
       {/* Form container */}
       <div className="w-full max-w-md bg-gray-900 rounded-2xl shadow-lg p-8">
@@ -68,7 +72,7 @@ export default function SignUp() {
 
         <form onSubmit={handleSignUp} className="space-y-4">
           {/* Username */}
-          <div className="relative">
+          <div>
             <input
               type="text"
               placeholder="Username"
@@ -77,15 +81,21 @@ export default function SignUp() {
               required
               className="w-full px-4 py-3 rounded-xl bg-gray-800 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <span
-              className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-3 h-3 rounded-full ${getIndicatorColor(
+            <p
+              className={`text-sm mt-1 ${getTextColor(
                 username ? isValidUsername(username) : undefined
               )}`}
-            />
+            >
+              {username
+                ? isValidUsername(username)
+                  ? "✓ Username looks good"
+                  : "Username must be between 3–20 characters"
+                : "Enter a username between 3–20 characters"}
+            </p>
           </div>
 
           {/* Email */}
-          <div className="relative">
+          <div>
             <input
               type="email"
               placeholder="Email"
@@ -94,62 +104,81 @@ export default function SignUp() {
               required
               className="w-full px-4 py-3 rounded-xl bg-gray-800 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <span
-              className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-3 h-3 rounded-full ${getIndicatorColor(
-                email ? isValidEmail(email) : undefined
-              )}`}
-            />
           </div>
 
           {/* Password */}
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full px-4 py-3 rounded-xl bg-gray-800 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <span
-              className={`absolute right-10 top-1/2 transform -translate-y-1/2 w-3 h-3 rounded-full ${getIndicatorColor(
+          <div>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full px-4 py-3 rounded-xl bg-gray-800 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-300"
+              >
+                {showPassword ? (
+                  <EyeOffIcon className="w-5 h-5" />
+                ) : (
+                  <EyeIcon className="w-5 h-5" />
+                )}
+              </button>
+            </div>
+            <p
+              className={`text-sm mt-1 ${getTextColor(
                 password ? isValidPassword(password) : undefined
               )}`}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-300"
             >
-              {showPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
-            </button>
+              {password
+                ? isValidPassword(password)
+                  ? "✓ Password meets requirements"
+                  : "Password must be at least 8 characters"
+                : "Use at least 8 characters"}
+            </p>
           </div>
 
           {/* Confirm Password */}
-          <div className="relative">
-            <input
-              type={showConfirm ? "text" : "password"}
-              placeholder="Confirm Password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              className="w-full px-4 py-3 rounded-xl bg-gray-800 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <span
-              className={`absolute right-10 top-1/2 transform -translate-y-1/2 w-3 h-3 rounded-full ${getIndicatorColor(
+          <div>
+            <div className="relative">
+              <input
+                type={showConfirm ? "text" : "password"}
+                placeholder="Confirm Password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                className="w-full px-4 py-3 rounded-xl bg-gray-800 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm(!showConfirm)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-300"
+              >
+                {showConfirm ? (
+                  <EyeOffIcon className="w-5 h-5" />
+                ) : (
+                  <EyeIcon className="w-5 h-5" />
+                )}
+              </button>
+            </div>
+            <p
+              className={`text-sm mt-1 ${getTextColor(
                 confirmPassword ? isPasswordMatch : undefined
               )}`}
-            />
-            <button
-              type="button"
-              onClick={() => setShowConfirm(!showConfirm)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-300"
             >
-              {showConfirm ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
-            </button>
+              {confirmPassword
+                ? isPasswordMatch
+                  ? "✓ Passwords match"
+                  : "Passwords do not match"
+                : "Re-enter your password"}
+            </p>
           </div>
 
-          {/* Error message */}
+          {/* General error (e.g. invalid email or signup error) */}
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
           {/* Submit */}
