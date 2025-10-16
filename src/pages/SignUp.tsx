@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import logo from "../assets/logo.png";
@@ -15,6 +15,9 @@ export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [checkingUsername, setCheckingUsername] = useState(false);
+
   const navigate = useNavigate();
 
   // Validation helpers
@@ -24,12 +27,41 @@ export default function SignUp() {
   const isPasswordMatch = password === confirmPassword;
   const isValidUsername = (uname: string) => uname.length >= 3 && uname.length <= 20;
 
+  // Check username availability when it changes
+  useEffect(() => {
+    if (!isValidUsername(username)) {
+      setUsernameAvailable(null);
+      return;
+    }
+
+    const delayDebounce = setTimeout(async () => {
+      setCheckingUsername(true);
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/check-username`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username }),
+        });
+        const data = await res.json();
+        setUsernameAvailable(!data.exists);
+      } catch (err) {
+        console.error("Username check failed", err);
+        setUsernameAvailable(null);
+      } finally {
+        setCheckingUsername(false);
+      }
+    }, 500); // debounce by 500ms
+
+    return () => clearTimeout(delayDebounce);
+  }, [username]);
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     if (!isValidEmail(email)) return setError("Invalid email address");
     if (!isValidUsername(username)) return setError("Username must be 3-20 characters");
+    if (usernameAvailable === false) return setError("Username is already taken");
     if (!isValidPassword(password)) return setError("Password must be at least 8 characters");
     if (!isPasswordMatch) return setError("Passwords do not match");
 
@@ -81,16 +113,34 @@ export default function SignUp() {
               required
               className="w-full px-4 py-3 rounded-xl bg-gray-800 text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+
+            {/* ✅ NEW username availability indicator */}
             <p
               className={`text-sm mt-1 ${getTextColor(
-                username ? isValidUsername(username) : undefined
+                username
+                  ? isValidUsername(username)
+                    ? usernameAvailable === null
+                      ? undefined
+                      : usernameAvailable
+                    : false
+                  : undefined
               )}`}
             >
-              {username
-                ? isValidUsername(username)
-                  ? "✓ Username looks good"
-                  : "Username must be between 3–20 characters"
-                : "Enter a username between 3–20 characters"}
+              {username ? (
+                !isValidUsername(username) ? (
+                  "Username must be between 3–20 characters"
+                ) : checkingUsername ? (
+                  "Checking availability..."
+                ) : usernameAvailable === null ? (
+                  "Enter a username between 3–20 characters"
+                ) : usernameAvailable ? (
+                  "✓ Username available"
+                ) : (
+                  "✗ Username already taken"
+                )
+              ) : (
+                "Enter a username between 3–20 characters"
+              )}
             </p>
           </div>
 

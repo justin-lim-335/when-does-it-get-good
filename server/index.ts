@@ -6,6 +6,7 @@ import signupUserRouter from "./routes/signup-user"
 import searchRoutes from "./routes/search";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "./supabase";
+import checkUsernameRouter from "./routes/check-username";
 
 // ------------------- Setup -------------------
 const app = express();
@@ -89,6 +90,9 @@ app.get("/", (req, res) => {
 
 // Signup user route
 app.use("/signup-user", signupUserRouter);
+
+// Check username availability route
+app.use("/check-username", checkUsernameRouter);
 
 // Search shows by title (Supabase + fallback to TMDb)
 app.use("/api/search", searchRoutes);
