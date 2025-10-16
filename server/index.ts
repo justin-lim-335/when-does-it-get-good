@@ -3,6 +3,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import signupUserRouter from "./routes/signup-user"
+import searchRoutes from "./routes/search";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "./supabase";
 
@@ -68,48 +69,7 @@ app.get("/", (req, res) => {
 app.use("/signup-user", signupUserRouter);
 
 // Search shows by title (Supabase + fallback to TMDb)
-app.get("/api/search", async (req, res) => {
-  try {
-    const query = (req.query.query as string) || "";
-    if (!query) return res.json([]);
-
-    // 1️⃣ Search Supabase
-    const { data: shows, error } = await supabase
-      .from("shows")
-      .select("*")
-      .ilike("title", `%${query}%`)
-      .limit(24);
-
-    if (error) {
-      console.error("Supabase error:", error);
-      return res.status(500).json({ error: error.message });
-    }
-
-    // 2️⃣ Fallback to TMDb if no shows in Supabase
-    if (!shows || shows.length === 0) {
-      const tmdbRes = await fetch(
-        `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(
-          query
-        )}`
-      );
-      const tmdbData = await tmdbRes.json();
-
-      const mapped = (tmdbData.results || []).map((s: any) => ({
-        tmdb_id: s.id,
-        title: s.name,
-        poster_path: s.poster_path,
-        first_air_date: s.first_air_date,
-      }));
-
-      return res.json(mapped);
-    }
-
-    res.json(shows);
-  } catch (err) {
-    console.error("Search error:", err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
+app.use("/api/search", searchRoutes);
 
 // GET popular shows for homepage
 app.get("/shows/popular", async (req, res) => {
