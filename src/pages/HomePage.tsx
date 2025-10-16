@@ -20,8 +20,7 @@ interface HomepageData {
 export default function HomePage() {
   const [data, setData] = useState<HomepageData | null>(null);
   const [loading, setLoading] = useState(true);
-  const API_BASE =
-    process.env.VITE_API_BASE_URL;
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
   const normalizeShow = (s: any): Show => ({
     tmdb_id: s.tmdb_id || s.id,
