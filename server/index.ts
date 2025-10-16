@@ -68,7 +68,7 @@ app.get("/", (req, res) => {
 app.use("/signup-user", signupUserRouter);
 
 // Search shows by title (Supabase + fallback to TMDb)
-app.get("/shows/search", async (req, res) => {
+app.get("/api/search", async (req, res) => {
   try {
     const query = (req.query.query as string) || "";
     if (!query) return res.json([]);
