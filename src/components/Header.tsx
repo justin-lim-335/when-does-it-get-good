@@ -5,7 +5,7 @@ import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import logo from "../assets/logo.png";
 
-const API_BASE_URL = process.env.VITE_API_BASE_URL;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 interface Show {
   tmdb_id: number;
