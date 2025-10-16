@@ -1,39 +1,73 @@
 // src/pages/TermsOfUse.tsx
-import React from "react";
-import { Link } from "react-router-dom";
-import logo from "../assets/logo.png";
 
 export default function TermsOfUse() {
   return (
-    <div className="min-h-screen bg-gray-800 text-gray-200 px-4 py-12 flex flex-col items-center">
-      {/* Logo */}
-      <img src={logo} alt="Site Logo" className="w-32 h-auto mb-6" />
+    <div className="flex flex-col min-h-screen bg-gray-800 text-gray-200">
+      <main className="flex-grow max-w-4xl mx-auto px-6 py-12">
+        <h1 className="text-4xl font-bold mb-6 text-white">Terms of Use</h1>
+        <p className="mb-6">Effective Date: October 16, 2025</p>
 
-      <div className="max-w-3xl space-y-6">
-        <h1 className="text-4xl font-bold text-white text-center">Terms of Use</h1>
-
-        <p className="text-lg leading-relaxed">
-          By using When Does It Get Good?, you agree to these terms. This site is intended for general entertainment and personal use. 
-          You are solely responsible for your interactions with the platform.
+        <p className="mb-4">
+          Welcome to When Does It Get Good (“the Site”). By using our Site and services, including our voting interface and show information API, you agree to the following terms:
         </p>
 
-        <p className="text-lg leading-relaxed">
-          Users may vote on when shows “get good.” Only your email is required for account creation and verification. No personal information is shared publicly.
-        </p>
+        <ol className="list-decimal list-inside space-y-4">
+          <li>
+            <strong>Use of the Site</strong>
+            <ul className="list-disc list-inside ml-6 mt-1 space-y-1">
+              <li>The Site is for personal, non-commercial use.</li>
+              <li>Users may vote on shows and access public show information only.</li>
+              <li>You may not attempt to scrape, copy, or exploit the Site for commercial purposes.</li>
+            </ul>
+          </li>
 
-        <p className="text-lg leading-relaxed">
-          Show information comes from TMDB. While we strive to provide accurate data, we do not guarantee completeness or accuracy. The site owner is not liable for any errors or omissions.
-        </p>
+          <li>
+            <strong>Account Responsibility</strong>
+            <ul className="list-disc list-inside ml-6 mt-1 space-y-1">
+              <li>You may need to create an account using your email.</li>
+              <li>Keep your login information confidential.</li>
+              <li>You are responsible for all activity under your account.</li>
+            </ul>
+          </li>
 
-        <p className="text-lg leading-relaxed italic">
-          Continued use of this site constitutes acceptance of these terms.
-        </p>
+          <li>
+            <strong>Content & Data</strong>
+            <ul className="list-disc list-inside ml-6 mt-1 space-y-1">
+              <li>All show information is sourced from third-party services (e.g., TMDB). We do not guarantee completeness or accuracy.</li>
+              <li>Users may only interact with the Site for voting. No other content submissions are permitted.</li>
+            </ul>
+          </li>
 
-        <div className="flex justify-center space-x-6 mt-6">
-          <Link to="/" className="text-blue-400 hover:underline">Home</Link>
-          <Link to="/about" className="text-blue-400 hover:underline">About</Link>
-        </div>
-      </div>
+          <li>
+            <strong>Limitations & Liability</strong>
+            <ul className="list-disc list-inside ml-6 mt-1 space-y-1">
+              <li>The Site is provided “as-is” and we disclaim all warranties.</li>
+              <li>We are not liable for data inaccuracies, service interruptions, or other losses.</li>
+            </ul>
+          </li>
+
+          <li>
+            <strong>Changes</strong>
+            <ul className="list-disc list-inside ml-6 mt-1 space-y-1">
+              <li>We may update these Terms at any time. Continued use constitutes acceptance of the revised Terms.</li>
+            </ul>
+          </li>
+
+          <li>
+            <strong>Governing Law</strong>
+            <ul className="list-disc list-inside ml-6 mt-1 space-y-1">
+              <li>These Terms are governed by international standards and applicable local laws.</li>
+            </ul>
+          </li>
+
+          <li>
+            <strong>Contact</strong>
+            <ul className="list-disc list-inside ml-6 mt-1 space-y-1">
+              <li>For questions regarding the Terms, reach out via <a href="mailto:whendoesitgg@gmail.com" className="text-blue-400 hover:underline">whendoesitgg@gmail.com</a>.</li>
+            </ul>
+          </li>
+        </ol>
+      </main>
     </div>
   );
 }

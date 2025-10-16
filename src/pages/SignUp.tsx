@@ -85,7 +85,10 @@ const handleSignUp = async (e: React.FormEvent) => {
 
     // Step 2️⃣ Proceed with signup
     localStorage.setItem("signup_username", username);
-    const { data, error: authError } = await supabase.auth.signUp({ email, password });
+
+    const { data, error: authError } = await supabase.auth.signUp(
+      { email, password, redirectTo: "https://www.whendoesitgetgood.net/welcome" } as any // <-- Added redirect
+    );
 
     if (authError) throw authError;
     if (!data.user) throw new Error("Failed to create user.");

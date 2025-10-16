@@ -14,40 +14,35 @@ export default function Welcome() {
       setError(null);
 
       try {
-        // Extract hash fragment (Supabase puts access_token etc. here)
+        // Extract hash fragment (Supabase puts access_token, refresh_token here)
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const accessToken = hashParams.get("access_token");
 
-        if (accessToken) {
-          // Set the session manually if access_token is present
-          const { data, error: sessionError } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: hashParams.get("refresh_token") || "",
+        if (!accessToken) throw new Error("No access token found in URL.");
+
+        // Set Supabase session
+        const { data, error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: hashParams.get("refresh_token") || "",
+        });
+        if (sessionError) throw sessionError;
+
+        const user = data?.user;
+        if (!user) throw new Error("User not found after setting session.");
+
+        // Insert username into backend if stored in localStorage
+        const username = localStorage.getItem("signup_username");
+        if (username) {
+          await fetch(`${import.meta.env.VITE_API_BASE_URL}/signup-user`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id: user.id, username }),
           });
-          if (sessionError) throw sessionError;
-
-          const user = data?.user;
-          if (!user) throw new Error("User not found after setting session.");
-
-          // Fetch username stored temporarily in localStorage
-          const username = localStorage.getItem("signup_username");
-          if (username) {
-            await fetch(`${import.meta.env.VITE_API_BASE_URL}/signup-user`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                user_id: user.id,
-                username,
-              }),
-            });
-            localStorage.removeItem("signup_username");
-          }
-
-          // Once verified, redirect to homepage
-          navigate("/");
-        } else {
-          throw new Error("No access token found in URL.");
+          localStorage.removeItem("signup_username");
         }
+
+        // Redirect to homepage
+        navigate("/");
       } catch (err: any) {
         console.error("Welcome page error:", err);
         setError(err.message || "Failed to confirm user.");
@@ -59,21 +54,11 @@ export default function Welcome() {
     confirmUser();
   }, [navigate]);
 
-  if (loading)
-    return (
-      <div className="min-h-screen flex flex-col justify-center items-center text-white bg-gray-900">
-        <img src={logo} alt="Site Logo" className="w-24 h-auto mb-4" />
-        <p>Confirming your account...</p>
-      </div>
-    );
-
-  if (error)
-    return (
-      <div className="min-h-screen flex flex-col justify-center items-center text-red-400 bg-gray-900">
-        <img src={logo} alt="Site Logo" className="w-24 h-auto mb-4" />
-        <p>{error}</p>
-      </div>
-    );
-
-  return null;
+  return (
+    <div className="min-h-screen flex flex-col justify-start items-center pt-24 text-white bg-gray-900">
+      <img src={logo} alt="Site Logo" className="w-32 h-auto mb-6" />
+      {loading && <p className="text-lg">Confirming your account...</p>}
+      {error && <p className="text-lg text-red-400">{error}</p>}
+    </div>
+  );
 }
