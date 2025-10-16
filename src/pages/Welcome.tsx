@@ -1,18 +1,57 @@
-import logo from "../assets/logo.png";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabaseClient";
 
 export default function Welcome() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-800">
-      <img
-            src={logo}
-            alt="Site Logo"
-            className="h-28 sm:h-24 w-auto cursor-pointer transition-all duration-300"
-            onClick={() => navigate("/")}
-          />
-      <h1 className="text-3xl font-bold mb-4">Welcome to Get Good!</h1>
-      <p className="text-lg">Your email is confirmed. You can now log in and enjoy the site.</p>
-    </div>
-  );
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get("code"); // for email confirmation links
+
+
+  useEffect(() => {
+    const confirmUser = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        // Exchange confirmation code from URL automatically
+        const { data, error: sessionError } = await supabase.auth.exchangeCodeForSession(code || "");
+        if (sessionError) throw sessionError;
+        if (!data.session) throw new Error("No session returned.");
+
+        const user = data.session.user;
+
+        // Retrieve username from localStorage
+        const username = localStorage.getItem("signup_username");
+        if (username) {
+          // Send to backend to insert into `users` table with service role
+          await fetch(`${import.meta.env.VITE_API_BASE_URL}/signup-user`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: user.id,
+              username,
+            }),
+          });
+          localStorage.removeItem("signup_username");
+        }
+
+        navigate("/"); // redirect to homepage
+      } catch (err: any) {
+        console.error("Welcome page error:", err);
+        setError(err.message || "Failed to confirm user.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    confirmUser();
+  }, [navigate]);
+
+  if (loading) return <p className="text-center mt-8">Confirming your account...</p>;
+  if (error) return <p className="text-center mt-8 text-red-500">{error}</p>;
+
+  return null;
 }
