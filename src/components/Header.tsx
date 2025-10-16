@@ -35,7 +35,7 @@ export default function Header() {
     const fetchSuggestions = async () => {
       try {
         const res = await fetch(
-          `${API_BASE_URL}/search?query=${encodeURIComponent(query)}`
+          `${API_BASE_URL}/api/search?query=${encodeURIComponent(query)}`
         );
         const data = await res.json();
         setSuggestions(data.results?.slice(0, 6) || []);
