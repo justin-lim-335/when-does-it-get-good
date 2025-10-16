@@ -1,37 +1,38 @@
-// src/pages/Privacy.tsx
-export default function Privacy() {
+// src/pages/PrivacyPolicy.tsx
+import React from "react";
+import { Link } from "react-router-dom";
+import logo from "../assets/logo.png";
+
+export default function PrivacyPolicy() {
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10">
-      <h1 className="text-3xl font-semibold text-gray-800 mb-4">Privacy Policy</h1>
-      <p className="text-gray-600 mb-6">
-        Your privacy is important to us. This policy explains how we collect, use, and protect your
-        information.
-      </p>
+    <div className="min-h-screen bg-gray-800 text-gray-200 px-4 py-12 flex flex-col items-center">
+      {/* Logo */}
+      <img src={logo} alt="Site Logo" className="w-32 h-auto mb-6" />
 
-      <div className="space-y-5 text-gray-700 leading-relaxed">
-        <section>
-          <h2 className="text-xl font-medium text-gray-800">1. Information We Collect</h2>
-          <p>
-            We collect account information such as your email and username, as well as limited usage
-            data to improve your experience.
-          </p>
-        </section>
+      <div className="max-w-3xl space-y-6">
+        <h1 className="text-4xl font-bold text-white text-center">Privacy Policy</h1>
 
-        <section>
-          <h2 className="text-xl font-medium text-gray-800">2. How We Use Your Data</h2>
-          <p>
-            Your information is used solely to provide and enhance our services. We do not sell your
-            personal data to third parties.
-          </p>
-        </section>
+        <p className="text-lg leading-relaxed">
+          Your privacy is important to us. When Does It Get Good? only collects your email for login, verification, and occasional notifications about major site updates.
+          No personal information is shared publicly or sold to third parties.
+        </p>
 
-        <section>
-          <h2 className="text-xl font-medium text-gray-800">3. Data Security</h2>
-          <p>
-            We implement reasonable measures to safeguard your information, though no method of
-            transmission over the Internet is completely secure.
-          </p>
-        </section>
+        <p className="text-lg leading-relaxed">
+          We may use analytics services such as Vercel Analytics to understand general site traffic and improve user experience. No advertising or targeting is used.
+        </p>
+
+        <p className="text-lg leading-relaxed">
+          Show data is sourced from TMDB, but user activity (votes) is never shared publicly. We cannot guarantee protection against automated scraping of publicly available show data, but this does not affect your personal information.
+        </p>
+
+        <p className="text-lg leading-relaxed italic">
+          By using this site, you consent to the collection and usage of your information as described in this policy.
+        </p>
+
+        <div className="flex justify-center space-x-6 mt-6">
+          <Link to="/" className="text-blue-400 hover:underline">Home</Link>
+          <Link to="/about" className="text-blue-400 hover:underline">About</Link>
+        </div>
       </div>
     </div>
   );

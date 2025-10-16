@@ -1,37 +1,38 @@
-// src/pages/Terms.tsx
-export default function Terms() {
+// src/pages/TermsOfUse.tsx
+import React from "react";
+import { Link } from "react-router-dom";
+import logo from "../assets/logo.png";
+
+export default function TermsOfUse() {
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10">
-      <h1 className="text-3xl font-semibold text-gray-800 mb-4">Terms of Service</h1>
-      <p className="text-gray-600 mb-6">
-        These Terms of Service govern your use of this website and related services. By using our
-        site, you agree to abide by the terms outlined below.
-      </p>
+    <div className="min-h-screen bg-gray-800 text-gray-200 px-4 py-12 flex flex-col items-center">
+      {/* Logo */}
+      <img src={logo} alt="Site Logo" className="w-32 h-auto mb-6" />
 
-      <div className="space-y-5 text-gray-700 leading-relaxed">
-        <section>
-          <h2 className="text-xl font-medium text-gray-800">1. Use of Service</h2>
-          <p>
-            You agree to use this website in compliance with all applicable laws and not for any
-            unlawful or prohibited purpose.
-          </p>
-        </section>
+      <div className="max-w-3xl space-y-6">
+        <h1 className="text-4xl font-bold text-white text-center">Terms of Use</h1>
 
-        <section>
-          <h2 className="text-xl font-medium text-gray-800">2. Account Responsibilities</h2>
-          <p>
-            You are responsible for maintaining the confidentiality of your account and password and
-            for restricting access to your account.
-          </p>
-        </section>
+        <p className="text-lg leading-relaxed">
+          By using When Does It Get Good?, you agree to these terms. This site is intended for general entertainment and personal use. 
+          You are solely responsible for your interactions with the platform.
+        </p>
 
-        <section>
-          <h2 className="text-xl font-medium text-gray-800">3. Modifications</h2>
-          <p>
-            We reserve the right to modify these terms at any time. Updates will be posted on this
-            page.
-          </p>
-        </section>
+        <p className="text-lg leading-relaxed">
+          Users may vote on when shows “get good.” Only your email is required for account creation and verification. No personal information is shared publicly.
+        </p>
+
+        <p className="text-lg leading-relaxed">
+          Show information comes from TMDB. While we strive to provide accurate data, we do not guarantee completeness or accuracy. The site owner is not liable for any errors or omissions.
+        </p>
+
+        <p className="text-lg leading-relaxed italic">
+          Continued use of this site constitutes acceptance of these terms.
+        </p>
+
+        <div className="flex justify-center space-x-6 mt-6">
+          <Link to="/" className="text-blue-400 hover:underline">Home</Link>
+          <Link to="/about" className="text-blue-400 hover:underline">About</Link>
+        </div>
       </div>
     </div>
   );

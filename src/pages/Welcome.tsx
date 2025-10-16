@@ -7,8 +7,6 @@ export default function Welcome() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const urlParams = new URLSearchParams(window.location.search);
-  const code = urlParams.get("code"); // for email confirmation links
 
   useEffect(() => {
     const confirmUser = async () => {
@@ -16,30 +14,40 @@ export default function Welcome() {
       setError(null);
 
       try {
-        // Exchange confirmation code from URL automatically
-        const { data, error: sessionError } = await supabase.auth.exchangeCodeForSession(code || "");
-        if (sessionError) throw sessionError;
-        if (!data.session) throw new Error("No session returned.");
+        // Extract hash fragment (Supabase puts access_token etc. here)
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = hashParams.get("access_token");
 
-        const user = data.session.user;
-
-        // Retrieve username from localStorage
-        const username = localStorage.getItem("signup_username");
-        if (username) {
-          // Send to backend to insert into `users` table
-          await fetch(`${import.meta.env.VITE_API_BASE_URL}/signup-user`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              user_id: user.id,
-              username,
-            }),
+        if (accessToken) {
+          // Set the session manually if access_token is present
+          const { data, error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: hashParams.get("refresh_token") || "",
           });
-          localStorage.removeItem("signup_username");
-        }
+          if (sessionError) throw sessionError;
 
-        // Redirect to home after short delay
-        setTimeout(() => navigate("/"), 2000);
+          const user = data?.user;
+          if (!user) throw new Error("User not found after setting session.");
+
+          // Fetch username stored temporarily in localStorage
+          const username = localStorage.getItem("signup_username");
+          if (username) {
+            await fetch(`${import.meta.env.VITE_API_BASE_URL}/signup-user`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                user_id: user.id,
+                username,
+              }),
+            });
+            localStorage.removeItem("signup_username");
+          }
+
+          // Once verified, redirect to homepage
+          navigate("/");
+        } else {
+          throw new Error("No access token found in URL.");
+        }
       } catch (err: any) {
         console.error("Welcome page error:", err);
         setError(err.message || "Failed to confirm user.");
@@ -48,36 +56,24 @@ export default function Welcome() {
       }
     };
 
-    if (code) confirmUser();
-  }, [navigate, code]);
+    confirmUser();
+  }, [navigate]);
 
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-800 text-center px-4">
-      {/* Logo section */}
-      <img
-            src={logo}
-            alt="Site Logo"
-            className="h-28 sm:h-24 w-auto cursor-pointer transition-all duration-300"
-            onClick={() => navigate("/")}
-        />
+  if (loading)
+    return (
+      <div className="min-h-screen flex flex-col justify-center items-center text-white bg-gray-900">
+        <img src={logo} alt="Site Logo" className="w-24 h-auto mb-4" />
+        <p>Confirming your account...</p>
+      </div>
+    );
 
-      {loading && (
-        <p className="text-lg text-gray-200 font-heading">
-          Confirming your account...
-        </p>
-      )}
+  if (error)
+    return (
+      <div className="min-h-screen flex flex-col justify-center items-center text-red-400 bg-gray-900">
+        <img src={logo} alt="Site Logo" className="w-24 h-auto mb-4" />
+        <p>{error}</p>
+      </div>
+    );
 
-      {error && (
-        <p className="text-lg text-red-500 font-medium">
-          {error}
-        </p>
-      )}
-
-      {!loading && !error && (
-        <p className="text-lg text-green-200 font-heading">
-          🎉 Your account has been confirmed! Redirecting...
-        </p>
-      )}
-    </div>
-  );
+  return null;
 }

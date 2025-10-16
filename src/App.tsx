@@ -5,11 +5,13 @@ import ShowPage from "./pages/ShowPage";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import Account from "./pages/Account";
+import About from "./pages/About";
 import Privacy from "./pages/PrivacyPolicy";
 import Terms from "./pages/TermsOfUse";
 import History from "./pages/VotingHistory";
 import Welcome from "./pages/Welcome";
 import Waiting from "./pages/Waiting";
+import Footer from "./components/Footer";
 
 function App() {
   return (
@@ -24,6 +26,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/account" element={<Account />} />
+            <Route path="/about" element={<About />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/history" element={<History />} />
@@ -31,6 +34,8 @@ function App() {
             <Route path="/waiting" element={<Waiting />} />
           </Routes>
         </main>
+        {/* Shared Footer */}
+        <Footer />
       </div>
     </Router>
   );
