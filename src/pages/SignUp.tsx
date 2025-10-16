@@ -45,7 +45,7 @@ export default function SignUp() {
       if (!data.user) throw new Error("Failed to create user.");
 
       alert("Account created! Please check your email to confirm before logging in.");
-      navigate("/waiting-auth");
+      navigate("/waiting");
     } catch (err: any) {
       setError(err.message || "An error occurred during sign up");
     } finally {
@@ -79,7 +79,7 @@ export default function SignUp() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              className="w-full px-4 py-3 rounded-xl bg-gray-800 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 rounded-xl bg-gray-800 text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <p
               className={`text-sm mt-1 ${getTextColor(
@@ -102,7 +102,7 @@ export default function SignUp() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-3 rounded-xl bg-gray-800 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 rounded-xl bg-gray-800 text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -115,12 +115,12 @@ export default function SignUp() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-4 py-3 rounded-xl bg-gray-800 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 rounded-xl bg-gray-800 text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-300"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-200"
               >
                 {showPassword ? (
                   <EyeOffIcon className="w-5 h-5" />
@@ -151,7 +151,7 @@ export default function SignUp() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                className="w-full px-4 py-3 rounded-xl bg-gray-800 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 rounded-xl bg-gray-800 text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
                 type="button"
