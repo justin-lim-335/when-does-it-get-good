@@ -12,7 +12,8 @@ const app = express();
 app.use(cors({
   origin: [
     "http://localhost:5173",
-    "https://when-does-it-get-good.vercel.app"
+    "https://when-does-it-get-good.vercel.app", 
+    "https://www.whendoesitgetgood.net"
   ],
   credentials: true,
 }));
