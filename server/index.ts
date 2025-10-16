@@ -9,24 +9,34 @@ import { supabaseAdmin } from "./supabase";
 
 // ------------------- Setup -------------------
 const app = express();
-app.use(cors({
-  origin: (origin, callback) => {
-    const allowedOrigins = [
-      "https://whendoesitgetgood.net",
-      "https://www.whendoesitgetgood.net",
-      "http://localhost:5173",
-      "https://when-does-it-get-good.vercel.app",
-    ];
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        "https://whendoesitgetgood.net",
+        "https://www.whendoesitgetgood.net",
+        "https://when-does-it-get-good.vercel.app",
+        "http://localhost:5173",
+      ];
 
-    // Allow all vercel.app subdomains
-    if (origin && (allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin))) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
-}));
+      // Allow all vercel.app subdomains (optional, useful for staging)
+      const vercelRegex = /\.vercel\.app$/;
+
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        vercelRegex.test(origin)
+      ) {
+        console.log("✅ CORS allowed for:", origin);
+        callback(null, true);
+      } else {
+        console.error("❌ CORS blocked:", origin);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 
