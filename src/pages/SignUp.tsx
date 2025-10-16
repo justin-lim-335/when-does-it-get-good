@@ -55,35 +55,49 @@ export default function SignUp() {
     return () => clearTimeout(delayDebounce);
   }, [username]);
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+const handleSignUp = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError(null);
 
-    if (!isValidEmail(email)) return setError("Invalid email address");
-    if (!isValidUsername(username)) return setError("Username must be 3-20 characters");
-    if (usernameAvailable === false) return setError("Username is already taken");
-    if (!isValidPassword(password)) return setError("Password must be at least 8 characters");
-    if (!isPasswordMatch) return setError("Passwords do not match");
+  if (!isValidEmail(email)) return setError("Invalid email address");
+  if (!isValidUsername(username)) return setError("Username must be 3–20 characters");
+  if (usernameAvailable === false) return setError("Username already taken");
+  if (!isValidPassword(password)) return setError("Password must be at least 8 characters");
+  if (!isPasswordMatch) return setError("Passwords do not match");
 
-    setLoading(true);
-    try {
-      localStorage.setItem("signup_username", username);
+  setLoading(true);
+  try {
+    // Step 1️⃣ Check if email or username already exists
+    const { data: existingUsers, error: fetchError } = await supabase
+      .from("users")
+      .select("email, username")
+      .or(`email.eq.${email},username.eq.${username}`);
 
-      const { data, error: authError } = await supabase.auth.signUp(
-        { email, password } as any, // emailRedirectTo not needed
-      );
+    if (fetchError) throw fetchError;
 
-      if (authError) throw authError;
-      if (!data.user) throw new Error("Failed to create user.");
-
-      alert("Account created! Please check your email to confirm before logging in.");
-      navigate("/waiting");
-    } catch (err: any) {
-      setError(err.message || "An error occurred during sign up");
-    } finally {
-      setLoading(false);
+    if (existingUsers && existingUsers.length > 0) {
+      const duplicate =
+        existingUsers.find(u => u.email === email)
+          ? "Email already registered."
+          : "Username already taken.";
+      throw new Error(duplicate);
     }
-  };
+
+    // Step 2️⃣ Proceed with signup
+    localStorage.setItem("signup_username", username);
+    const { data, error: authError } = await supabase.auth.signUp({ email, password });
+
+    if (authError) throw authError;
+    if (!data.user) throw new Error("Failed to create user.");
+
+    alert("Account created! Please check your email to confirm before logging in.");
+    navigate("/waiting");
+  } catch (err: any) {
+    setError(err.message || "An error occurred during sign up");
+  } finally {
+    setLoading(false);
+  }
+};
 
     // Helper for text colors
   const getTextColor = (valid?: boolean) => {

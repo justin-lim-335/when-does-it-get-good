@@ -43,7 +43,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-16 p-6 bg-gray-900 text-white rounded shadow">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-800 px-4">
       <h1 className="text-2xl font-bold mb-6 text-center">Log In</h1>
 
       {!showReset ? (
@@ -78,8 +78,8 @@ export default function LoginPage() {
 
           <button
             onClick={handleLogin}
-            className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded font-bold"
             disabled={loading}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 text-white font-semibold hover:opacity-90 transition"
           >
             {loading ? "Logging in..." : "Log In"}
           </button>
@@ -124,7 +124,7 @@ export default function LoginPage() {
       <p className="mt-6 text-center text-gray-300">
         Don’t have an account?{" "}
         <span
-          className="text-green-400 underline cursor-pointer"
+          className="text-blue-400 underline cursor-pointer"
           onClick={() => navigate("/signup")}
         >
           Sign Up
