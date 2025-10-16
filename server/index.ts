@@ -13,7 +13,7 @@ app.use(cors({
   origin: (origin, callback) => {
     const allowedOrigins = [
       "https://whendoesitgetgood.net/*",
-      "whendoesitgetgood.net/*",
+      "https://www.whendoesitgetgood.net/*",
       "http://localhost:5173",
       "https://when-does-it-get-good.vercel.app",
     ];
