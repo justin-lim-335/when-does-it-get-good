@@ -1,3 +1,4 @@
+// src/pages/Welcome.tsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
@@ -12,40 +13,33 @@ export default function Welcome() {
     const confirmUser = async () => {
       setLoading(true);
       setError(null);
-
       try {
-        // Extract hash fragment (Supabase puts access_token, refresh_token here)
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const accessToken = hashParams.get("access_token");
+        // Read hash fragment (Supabase sends access_token in hash)
+        const hash = window.location.hash.substring(1); // remove '#'
+        const params = new URLSearchParams(hash);
+        const access_token = params.get("access_token");
+        const refresh_token = params.get("refresh_token") || "";
 
-        if (!accessToken) throw new Error("No access token found in URL.");
-
-        // Set Supabase session
-        const { data, error: sessionError } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: hashParams.get("refresh_token") || "",
-        });
-        if (sessionError) throw sessionError;
-
-        const user = data?.user;
-        if (!user) throw new Error("User not found after setting session.");
-
-        // Insert username into backend if stored in localStorage
-        const username = localStorage.getItem("signup_username");
-        if (username) {
-          await fetch(`${import.meta.env.VITE_API_BASE_URL}/signup-user`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ user_id: user.id, username }),
-          });
-          localStorage.removeItem("signup_username");
+        if (!access_token) {
+          throw new Error("No access token found in URL.");
         }
 
-        // Redirect to homepage
+        // Set session using both tokens
+        const { data, error: sessionError } = await supabase.auth.setSession({
+          access_token,
+          refresh_token,
+        });
+        if (sessionError) throw sessionError;
+        if (!data?.user) throw new Error("Failed to set session.");
+
+        // Mark in localStorage that user just confirmed — home page will show a banner and then clear it.
+        localStorage.setItem("just_confirmed", "true");
+
+        // redirect to home
         navigate("/");
       } catch (err: any) {
-        console.error("Welcome page error:", err);
-        setError(err.message || "Failed to confirm user.");
+        console.error("Welcome error:", err);
+        setError(err.message || "Failed to confirm account.");
       } finally {
         setLoading(false);
       }
@@ -54,11 +48,21 @@ export default function Welcome() {
     confirmUser();
   }, [navigate]);
 
-  return (
-    <div className="min-h-screen flex flex-col justify-start items-center pt-24 text-white bg-gray-900">
-      <img src={logo} alt="Site Logo" className="w-32 h-auto mb-6" />
-      {loading && <p className="text-lg">Confirming your account...</p>}
-      {error && <p className="text-lg text-red-400">{error}</p>}
-    </div>
-  );
+  if (loading)
+    return (
+      <div className="min-h-screen bg-gray-800 flex flex-col items-center justify-start pt-24 text-white">
+        <img src={logo} className="w-40 mb-6" alt="Logo" />
+        <div className="bg-gray-900 p-6 rounded-lg shadow">Confirming your account…</div>
+      </div>
+    );
+
+  if (error)
+    return (
+      <div className="min-h-screen bg-gray-800 flex flex-col items-center justify-start pt-24 text-red-400">
+        <img src={logo} className="w-40 mb-6" alt="Logo" />
+        <div className="bg-gray-900 p-6 rounded-lg shadow">{error}</div>
+      </div>
+    );
+
+  return null;
 }

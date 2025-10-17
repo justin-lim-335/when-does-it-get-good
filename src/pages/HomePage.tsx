@@ -21,6 +21,15 @@ export default function HomePage() {
   const [data, setData] = useState<HomepageData | null>(null);
   const [loading, setLoading] = useState(true);
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
+  const [justConfirmed, setJustConfirmed] = useState(false);
+
+  useEffect(() => {
+    if (localStorage.getItem("just_confirmed") === "true") {
+      setJustConfirmed(true);
+      localStorage.removeItem("just_confirmed");
+      setTimeout(() => setJustConfirmed(false), 6000);
+    }
+  }, []);
 
   const normalizeShow = (s: any): Show => ({
     tmdb_id: s.tmdb_id || s.id,
@@ -75,6 +84,12 @@ export default function HomePage() {
   return (
     <div className="bg-gray-800 min-h-screen w-full">
       <div className="max-w-[1400px] mx-auto px-4 py-8">
+        {justConfirmed && (
+          <div className="bg-green-600 text-white p-4 rounded mb-6 text-center font-medium shadow">
+            🎉 Your email has been confirmed! Welcome aboard!
+          </div>
+        )}
+
         <h1 className="text-2xl font-heading text-center mb-2 tracking-wide text-gray-300">
           Here to answer the question:
         </h1>

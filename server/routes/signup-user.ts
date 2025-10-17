@@ -1,20 +1,36 @@
 // server/routes/signup-user.ts
 import { Router } from "express";
 import { supabaseAdmin } from "../supabase";
+import { error } from "console";  
 
 const router = Router();
 
 router.post("/", async (req, res) => {
-  const { auth_id, username } = req.body;
-  if (!auth_id || !username) return res.status(400).json({ error: "Missing fields" });
+  const { id, email } = req.body; // coming from webhook or client
 
-  const { error } = await supabaseAdmin
-    .from("users")
-    .insert([{ auth_id, username }]);
+  try {
+    // ensure no duplicate
+    const { data: existing } = await supabaseAdmin
+      .from("users")
+      .select("id")
+      .eq("auth_id", id)
+      .single();
 
-  if (error) return res.status(500).json({ error: error.message });
+    if (existing) {
+      return res.status(200).json({ message: "User already exists" });
+    }
 
-  res.json({ message: "User profile created" });
+    // create minimal profile record
+    const { error } = await supabaseAdmin
+      .from("users")
+      .insert([{ auth_id: id, email, first_name: null, last_name: null, username: null }]);
+
+    if (error) throw error;
+    res.status(201).json({ message: "User record created" });
+  } catch (err) {
+    console.error("Signup-user route error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 export default router;
