@@ -1,6 +1,6 @@
 // src/api/users.ts
 import { Router } from "express";
-import { supabaseAdmin } from "../../src/lib/supabaseAdmin"; // make sure this uses SERVICE_ROLE_KEY for admin operations
+import { supabaseAdmin } from "../supabase"; // make sure this uses SERVICE_ROLE_KEY for admin operations
 
 const router = Router();
 
