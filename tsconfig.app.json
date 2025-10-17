@@ -23,5 +23,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src", "server/api"]
+  "include": ["src", "server/api", "server/routes/delete-user.ts", "server/routes/update-user.ts", "server/routes/users.ts"]
 }

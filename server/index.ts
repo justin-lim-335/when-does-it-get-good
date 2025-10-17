@@ -1,14 +1,15 @@
 // server/index.ts
 import "dotenv/config";
 import express from "express";
+import bodyParser from "body-parser";
 import cors from "cors";
 import signupUserRouter from "./routes/signup-user"
 import searchRoutes from "./routes/search";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "./supabase";
 import checkUsernameRouter from "./routes/check-username";
-import updateUserHandler from "./api/update-user";
-import deleteUserHandler from "./api/delete-user";
+import updateUserHandler from "./routes/update-user";
+import deleteUserHandler from "./routes/delete-user";
 
 // ------------------- Setup -------------------
 const app = express();
@@ -40,7 +41,7 @@ app.use(
     credentials: true,
   })
 );
-
+app.use(bodyParser.json());
 app.use(express.json());
 
 // ------------------- Environment -------------------
@@ -94,7 +95,7 @@ app.get("/", (req, res) => {
 app.use("/signup-user", signupUserRouter);
 
 // Check username availability route
-app.use("/check-username", checkUsernameRouter);
+app.use("/api/check-username", checkUsernameRouter);
 
 // Update user route
 app.post("/api/update-user", updateUserHandler);
