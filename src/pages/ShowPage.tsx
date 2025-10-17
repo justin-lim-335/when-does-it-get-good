@@ -18,6 +18,7 @@ interface Show {
   poster_path?: string;
   first_air_date?: string;
   overview?: string;
+  genre?: string;
   number_of_seasons?: number;
   number_of_episodes?: number;
 }
@@ -225,6 +226,7 @@ return (
             )}
             <div className="flex flex-col justify-center text-gray-200 text-lg space-y-2">
               <p><strong>Year:</strong> {show.first_air_date ? new Date(show.first_air_date).getFullYear() : "N/A"}</p>
+              <p><strong>Genre:</strong> {show.genre || "N/A"}</p>
               <p><strong>Seasons:</strong> {show.number_of_seasons || "N/A"}</p>
               <p><strong>Episodes:</strong> {show.number_of_episodes || "N/A"}</p>
             </div>

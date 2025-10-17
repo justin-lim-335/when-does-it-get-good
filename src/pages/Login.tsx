@@ -1,6 +1,7 @@
 // src/pages/Login.tsx
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import logo from "../assets/logo.png";
 import { supabase } from "../lib/supabaseClient";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 
@@ -11,6 +12,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [username, setUsername] = useState("");
 
   const [showReset, setShowReset] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
@@ -19,41 +21,82 @@ export default function LoginPage() {
   const handleLogin = async () => {
     setError(null);
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
 
-    if (error) {
-      setError(error.message);
-    } else {
-      navigate("/"); // go to home after login
+    try {
+      // Trim input to prevent accidental spaces
+      const identifier = username.trim();
+      const isEmail = identifier.includes("@");
+      let userEmail = identifier;
+
+      // If the identifier is NOT an email, look up the email associated with the username
+      if (!isEmail) {
+        const { data: userRecord, error: userLookupError } = await supabase
+          .from("users")
+          .select("email")
+          .eq("username", identifier)
+          .single();
+
+        if (userLookupError || !userRecord) {
+          throw new Error("Username not found.");
+        }
+
+        userEmail = userRecord.email;
+      }
+
+      // Attempt login with the resolved email
+      const { error: loginError } = await supabase.auth.signInWithPassword({
+        email: userEmail,
+        password,
+      });
+
+      if (loginError) {
+        throw new Error("Incorrect password or account not found.");
+      }
+
+      // ✅ Successful login → navigate home
+      navigate("/");
+    } catch (err: any) {
+      setError(err.message || "Login failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
+
 
   const handlePasswordReset = async () => {
     setResetMessage(null);
-    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: `${window.location.origin}/login`
-    });
 
-    if (error) {
-      setResetMessage(error.message);
-    } else {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/login`,
+      });
+
+      if (error) throw error;
+
       setResetMessage("Check your email for the password reset link!");
+    } catch (err: any) {
+      setResetMessage(err.message || "Failed to send password reset email.");
     }
   };
 
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-800 px-4">
-      <h1 className="text-2xl font-bold mb-6 text-center">Log In</h1>
+    <div className="min-h-screen flex flex-col items-center justify-start pt-24 bg-gray-800 px-4">
+      <img src={logo} alt="Site Logo" className="w-32 h-auto mb-8" />
+
+      <div className="w-full max-w-md bg-gray-900 rounded-2xl shadow-lg p-8">
+        <h2 className="text-3xl font-extrabold text-center text-white mb-6">
+          Log In
+        </h2>
 
       {!showReset ? (
         <div className="flex flex-col gap-4">
           <input
-            type="email"
-            placeholder="Email"
-            className="w-full p-2 rounded text-black"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            placeholder="Enter your username or email"
+            className="w-full p-2 rounded text-white bg-gray-800"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
           />
 
           {/* Password Field */}
@@ -61,7 +104,7 @@ export default function LoginPage() {
             <input
               type={showPassword ? "text" : "password"}
               placeholder="Password"
-              className="w-full p-2 rounded text-black pr-10"
+              className="w-full p-2 rounded text-white bg-gray-800 pr-10"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -131,5 +174,6 @@ export default function LoginPage() {
         </span>
       </p>
     </div>
+  </div>
   );
 }
