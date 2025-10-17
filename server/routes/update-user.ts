@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseAdmin = createClient(
+const supabase = createClient(
   process.env.VITE_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_ANON_KEY!
 );
 
 export default async function updateUserHandler(req: Request, res: Response) {
@@ -16,7 +16,7 @@ export default async function updateUserHandler(req: Request, res: Response) {
       return res.status(400).json({ error: "Missing userId or token" });
 
     // Verify token
-    const { data: sessionData, error: verifyError } = await supabaseAdmin.auth.getUser(token);
+    const { data: sessionData, error: verifyError } = await supabase.auth.getUser(token);
     if (verifyError || sessionData.user.id !== userId)
       return res.status(403).json({ error: "Unauthorized" });
 
@@ -27,7 +27,7 @@ export default async function updateUserHandler(req: Request, res: Response) {
 
     // Check username availability if provided
     if (username) {
-      const { data: existingUser } = await supabaseAdmin
+      const { data: existingUser } = await supabase
         .from("users")
         .select("auth_id")
         .eq("username", username)
@@ -38,7 +38,7 @@ export default async function updateUserHandler(req: Request, res: Response) {
     }
 
     // Update user record
-    const { error: updateError } = await supabaseAdmin
+    const { error: updateError } = await supabase
       .from("users")
       .update({ first_name, last_name, username })
       .eq("auth_id", userId);
