@@ -5,52 +5,40 @@ import { supabaseAdmin } from "../supabase";
 const router = Router();
 
 router.post("/", async (req, res) => {
-  const { email, password } = req.body;
+  const { email } = req.body; // only email is sent from frontend
 
-  if (!email || !password) {
-    return res.status(400).json({ error: "Email and password are required." });
+  if (!email) {
+    return res.status(400).json({ error: "Email is required" });
   }
 
   try {
-    // 1️⃣ Create user in Supabase Auth
-    const { data, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: false, // Let Supabase handle confirmation via email link
-    });
+    // Check if user already exists (by email)
+    const { data: existing, error: selectError } = await supabaseAdmin
+      .from("users")
+      .select("id")
+      .eq("email", email)
+      .single();
 
-    if (signUpError) {
-      console.error("Sign-up error:", signUpError);
-      return res.status(400).json({ error: signUpError.message });
+    if (selectError && selectError.code !== "PGRST116") {
+      console.error("Select error:", selectError);
+      return res.status(500).json({ error: "Database error" });
     }
 
-    const user = data.user;
-    if (!user) {
-      return res.status(500).json({ error: "User creation failed." });
+    if (existing) {
+      return res.status(200).json({ message: "User already exists" });
     }
 
-    // 2️⃣ Create a profile record in `users`
+    // Insert minimal profile
     const { error: insertError } = await supabaseAdmin
       .from("users")
-      .insert([
-        {
-          auth_id: user.id,
-          email: user.email,
-          first_name: null,
-          last_name: null,
-          username: null,
-        },
-      ]);
+      .insert([{ email, first_name: null, last_name: null, username: null }]);
 
     if (insertError) {
       console.error("Insert error:", insertError);
-      return res.status(500).json({ error: insertError.message });
+      return res.status(500).json({ error: "Failed to create user profile" });
     }
 
-    // 3️⃣ Send success response
-    return res.status(201).json({
-      message: "User created successfully. Please check your email to confirm your account.",
-    });
+    res.status(201).json({ message: "User profile created" });
   } catch (err) {
     console.error("Signup-user route error:", err);
     res.status(500).json({ error: "Internal server error" });
