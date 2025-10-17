@@ -27,6 +27,8 @@ export default function AccountDetails() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Load profile info
   useEffect(() => {
@@ -177,14 +179,9 @@ export default function AccountDetails() {
     }
   };
 
-  // ✅ Delete account
   const handleDeleteAccount = async () => {
-    if (
-      !confirm(
-        "Are you sure you want to delete your account? This cannot be undone."
-      )
-    )
-      return;
+    setDeleting(true);
+    setError(null);
 
     try {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -212,11 +209,19 @@ export default function AccountDetails() {
       if (!res.ok) throw new Error(result.error || "Failed to delete account.");
 
       await supabase.auth.signOut();
-      window.location.href = "/";
+
+      setSuccess("Your account has been permanently deleted. All data erased.");
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 2500);
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setDeleting(false);
+      setShowDeleteModal(false);
     }
   };
+
 
   if (loading)
     return <div className="text-gray-300 p-6">Loading account details...</div>;
@@ -355,19 +360,54 @@ export default function AccountDetails() {
         </form>
 
         {/* Delete Account */}
-        <div className="mt-8 border-t border-gray-700 pt-6">
+        <div className="mt-8 border-t border-gray-700 pt-6 relative">
           <h3 className="text-xl text-white font-semibold mb-3">Danger Zone</h3>
           <button
-            onClick={handleDeleteAccount}
+            onClick={() => setShowDeleteModal(true)}
             className="bg-red-600 hover:bg-red-700 text-white font-semibold rounded p-2 w-full"
           >
             Delete Account
           </button>
+
+          {/* Confirmation Modal */}
+          {showDeleteModal && (
+            <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50">
+              <div className="bg-gray-900 rounded-2xl p-6 w-[90%] max-w-md text-center border border-gray-700 shadow-lg">
+                <h2 className="text-2xl font-bold text-white mb-4">Confirm Deletion</h2>
+                <p className="text-gray-300 mb-6">
+                  Are you sure you want to permanently delete your account? <br />
+                  <span className="text-red-400 font-semibold">This cannot be undone.</span> <br />
+                  All voting history, saved preferences, and data will be erased forever.
+                </p>
+
+                <div className="flex justify-center gap-4">
+                  <button
+                    onClick={() => setShowDeleteModal(false)}
+                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded"
+                    disabled={deleting}
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    onClick={handleDeleteAccount}
+                    disabled={deleting}
+                    className={`px-4 py-2 rounded text-white ${
+                      deleting ? "bg-gray-600" : "bg-red-600 hover:bg-red-700"
+                    }`}
+                  >
+                    {deleting ? "Deleting..." : "Yes, Delete My Account"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
+
 
         {/* Feedback */}
         {error && <p className="text-red-500 text-sm text-center mt-4">{error}</p>}
-        {success && <p className="text-green-400 text-sm text-center mt-4">{success}</p>}
+        {success && <p className="text-green-400 text-sm text-center mt-4 animate-pulse">{success}</p>}
       </div>
     </div>
   );
