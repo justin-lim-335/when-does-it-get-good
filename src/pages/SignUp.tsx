@@ -1,6 +1,7 @@
 // src/pages/SignUp.tsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabaseClient";
 import { FaEye as EyeIcon, FaEyeSlash as EyeOffIcon } from "react-icons/fa6";
 import logo from "../assets/logo.png";
 
@@ -14,50 +15,70 @@ export default function SignUp() {
   const [showConfirm, setShowConfirm] = useState(false);
   const navigate = useNavigate();
 
+  const BACKEND_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+
   const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const isValidPassword = (pwd: string) => pwd.length >= 8 && !/\s/.test(pwd);
   const isPasswordMatch = password === confirmPassword;
-
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
-
-  const getValidationColor = (isValid: boolean | null) => {
-    if (isValid === null) return "text-gray-400";
-    return isValid ? "text-green-400" : "text-red-400";
-  };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    const emailValid = isValidEmail(email);
-    const passwordValid = isValidPassword(password);
-    const passwordsMatch = isPasswordMatch;
-
-    if (!emailValid) return setError("Please enter a valid email.");
-    if (!passwordValid)
+    if (!isValidEmail(email)) return setError("Please enter a valid email.");
+    if (!isValidPassword(password))
       return setError("Password must be at least 8 characters with no spaces.");
-    if (!passwordsMatch) return setError("Passwords do not match.");
+    if (!isPasswordMatch) return setError("Passwords do not match.");
 
     setLoading(true);
-
     try {
-      const res = await fetch(`${API_BASE_URL}/api/signup-user`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+      // Sign up via Supabase Auth
+      const { data, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`, // user redirected on confirmation
+        },
       });
 
-      const data = await res.json();
+      if (authError) throw authError;
+      if (!data.user) throw new Error("Sign-up failed. Try again later.");
 
-      if (!res.ok) throw new Error(data.error || "Sign-up failed");
+      // Optional: create minimal user profile in backend
+      try {
+        const res = await fetch(`${BACKEND_BASE}/signup-user`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }), // send only email for now
+        });
 
-      navigate("/waiting"); // Page telling user to check email for confirmation
+        let backendData;
+        try {
+          backendData = await res.json();
+        } catch {
+          const text = await res.text();
+          console.error("Non-JSON backend response:", text);
+          throw new Error("Backend returned unexpected response.");
+        }
+
+        if (!res.ok) throw new Error(backendData.error || "Failed to create user profile.");
+      } catch (backendErr: any) {
+        console.error("Backend signup error:", backendErr);
+        // we can optionally proceed if backend fails, user can still confirm email
+      }
+
+      navigate("/waiting"); // page after signup
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Sign-up failed. Please try again.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const getValidationColor = (value: string, isValid: boolean) => {
+    if (!value) return "text-gray-400";
+    return isValid ? "text-green-400" : "text-red-400";
   };
 
   return (
@@ -83,7 +104,7 @@ export default function SignUp() {
               className="p-2 rounded bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="you@example.com"
             />
-            <p className={`text-xs mt-1 ${getValidationColor(email ? isValidEmail(email) : null)}`}>
+            <p className={`text-xs mt-1 ${getValidationColor(email, isValidEmail(email))}`}>
               {email
                 ? isValidEmail(email)
                   ? "Valid email"
@@ -111,13 +132,11 @@ export default function SignUp() {
             >
               {showPassword ? <EyeOffIcon /> : <EyeIcon />}
             </div>
-            <p
-              className={`text-xs mt-1 ${getValidationColor(password ? isValidPassword(password) : null)}`}
-            >
+            <p className={`text-xs mt-1 ${getValidationColor(password, isValidPassword(password))}`}>
               {password
                 ? isValidPassword(password)
-                  ? "Password meets requirements"
-                  : "Password must be at least 8 chars and no spaces"
+                  ? "Password looks good"
+                  : "Must be at least 8 chars with no spaces"
                 : "Enter a password"}
             </p>
           </div>
@@ -141,16 +160,12 @@ export default function SignUp() {
             >
               {showConfirm ? <EyeOffIcon /> : <EyeIcon />}
             </div>
-            <p
-              className={`text-xs mt-1 ${getValidationColor(
-                confirmPassword ? isPasswordMatch : null
-              )}`}
-            >
+            <p className={`text-xs mt-1 ${getValidationColor(confirmPassword, isPasswordMatch)}`}>
               {confirmPassword
                 ? isPasswordMatch
                   ? "Passwords match"
                   : "Passwords do not match"
-                : "Confirm your password"}
+                : "Re-enter your password"}
             </p>
           </div>
 
