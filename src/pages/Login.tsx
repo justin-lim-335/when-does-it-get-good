@@ -13,54 +13,54 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [username, setUsername] = useState("");
+  const [emailOrUsername, setEmailOrUsername] = useState("");
 
   const [showReset, setShowReset] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [resetMessage, setResetMessage] = useState<string | null>(null);
 
-  const handleLogin = async () => {
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     setError(null);
     setLoading(true);
 
     try {
-      // Trim input to prevent accidental spaces
-      const identifier = username.trim();
-      const isEmail = identifier.includes("@");
-      let userEmail = identifier;
+      let loginEmail = emailOrUsername.trim();
 
-      // If the identifier is NOT an email, look up the email associated with the username
+      // Check if input is NOT an email
+      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginEmail);
       if (!isEmail) {
-        const { data: userRecord, error: userLookupError } = await supabase
+        // Treat it as a username and look up the user's email
+        const { data, error: lookupError } = await supabase
           .from("users")
           .select("email")
-          .eq("username", identifier)
+          .eq("username", loginEmail)
           .single();
 
-        if (userLookupError || !userRecord) {
-          throw new Error("Username not found.");
+        if (lookupError || !data?.email) {
+          throw new Error("No account found for that username.");
         }
 
-        userEmail = userRecord.email;
+        loginEmail = data.email; // replace with looked-up email
       }
 
-      // Attempt login with the resolved email
-      const { error: loginError } = await supabase.auth.signInWithPassword({
-        email: userEmail,
+      // Now sign in with email (or looked-up email)
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
         password,
       });
 
-      if (loginError) {
-        throw new Error("Incorrect password or account not found.");
-      }
+      if (signInError) throw signInError;
 
-      // ✅ Successful login → navigate home
-      navigate("/");
+      navigate("/"); // redirect after login
     } catch (err: any) {
-      setError(err.message || "Login failed. Please try again.");
+      console.error("Login error:", err);
+      setError(err.message || "Failed to log in. Please try again.");
     } finally {
       setLoading(false);
     }
   };
+
 
 
   const handlePasswordReset = async () => {
@@ -94,9 +94,9 @@ export default function LoginPage() {
           <input
             type="text"
             placeholder="Enter your username or email"
-            className="w-full p-2 rounded text-white bg-gray-800"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            className="p-2 rounded bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={emailOrUsername}
+            onChange={(e) => setEmailOrUsername(e.target.value)}
           />
 
           {/* Password Field */}

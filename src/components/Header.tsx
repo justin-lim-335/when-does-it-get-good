@@ -21,6 +21,7 @@ export default function Header() {
   const [suggestions, setSuggestions] = useState<Show[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [accountDropdown, setAccountDropdown] = useState(false);
+  const [displayName, setDisplayName] = useState("user");
 
   const accountRef = useRef<HTMLDivElement>(null);
 
@@ -53,6 +54,30 @@ export default function Header() {
     setQuery("");
     setShowDropdown(false);
   };
+
+  // 👤 Account display name
+    useEffect(() => {
+    const fetchProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("users")
+        .select("first_name, username")
+        .eq("auth_id", user.id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching profile:", error.message);
+        return;
+      }
+
+      if (data?.first_name) setDisplayName(data.first_name);
+      else if (data?.username) setDisplayName(data.username);
+      else setDisplayName("user");
+    };
+    fetchProfile();
+  }, []);
 
   // 🚪 Logout handler
   const handleLogout = async () => {
@@ -132,7 +157,7 @@ export default function Header() {
                 onClick={() => setAccountDropdown(!accountDropdown)}
                 className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-base font-medium transition"
               >
-                Hi, {username || "User"}
+                Hi, {displayName || "User"}
               </button>
 
               {/* 🔽 Account Dropdown */}
