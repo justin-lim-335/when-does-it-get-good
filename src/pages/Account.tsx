@@ -91,64 +91,62 @@ export default function AccountDetails() {
     return () => clearTimeout(timeout);
   }, [profile.username, editMode]);
 
-  // ✅ Save profile updates via backend
+// inside AccountDetails.tsx
+
+  // ✅ Save profile updates
   const handleSave = async () => {
     setSaving(true);
     setError(null);
     setSuccess(null);
 
-    if (profile.username && !isValidUsername(profile.username)) {
+    // Validation
+    if (profile.username && !/^[A-Za-z0-9_]{3,20}$/.test(profile.username)) {
       setError("Username must be 3–20 characters (letters, numbers, or underscores only).");
       setSaving(false);
       return;
     }
 
-    if (usernameAvailable === false) {
-      setError("Username is already taken.");
-      setSaving(false);
-      return;
-    }
-
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      // Get the currently logged-in user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) throw new Error("Not logged in.");
 
-      if (!token || !user) throw new Error("Not logged in.");
-
-      const res = await fetch(`${API_BASE}/api/update-user`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: user.id,
-          token,
+      // Update the users table using Supabase Admin client
+      const { error: updateError } = await supabase
+        .from("users")
+        .update({
           first_name: profile.first_name || null,
           last_name: profile.last_name || null,
           username: profile.username || null,
-        }),
-      });
+        })
+        .eq("auth_id", user.id);
 
-      // ✅ Prevent invalid JSON parse if empty body
-      const text = await res.text();
-      let result;
-      try {
-        result = text ? JSON.parse(text) : {};
-      } catch {
-        result = {};
-      }
-
-      if (!res.ok) throw new Error(result.error || "Failed to update profile.");
+      if (updateError) throw updateError;
 
       setSuccess("Profile updated successfully!");
       setEditMode(false);
+
+      // Refresh profile state from database
+      const { data, error: fetchError } = await supabase
+        .from("users")
+        .select("first_name, last_name, username, email")
+        .eq("auth_id", user.id)
+        .single();
+
+      if (fetchError) {
+        console.error(fetchError);
+      } else if (data) {
+        setProfile(data);
+      }
+
     } catch (err: any) {
-      setError(err.message);
+      console.error(err);
+      setError(err.message || "Failed to update profile.");
     } finally {
       setSaving(false);
     }
   };
+
 
   // ✅ Change password
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -255,20 +253,18 @@ export default function AccountDetails() {
               />
               {field === "username" && editMode && (
                 <>
-                  {checkingUsername ? (
+                  {profile.username === "" ? (
+                    <p className="text-xs text-gray-400">Enter a username (optional)</p>
+                  ) : !/^[A-Za-z0-9_]{3,20}$/.test(profile.username) ? (
+                    <p className="text-xs text-red-400">Invalid: 3–20 chars, letters/numbers/underscores only</p>
+                  ) : checkingUsername ? (
                     <p className="text-xs text-gray-400">Checking username...</p>
                   ) : usernameAvailable === false ? (
-                    <p className="text-xs text-red-400">
-                      Username already taken.
-                    </p>
+                    <p className="text-xs text-red-400">Username already taken.</p>
                   ) : usernameAvailable === true ? (
-                    <p className="text-xs text-green-400">
-                      Username available.
-                    </p>
+                    <p className="text-xs text-green-400">Username available!</p>
                   ) : (
-                    <p className="text-xs text-gray-400">
-                      • 3–20 chars, letters/numbers/underscores only
-                    </p>
+                    <p className="text-xs text-gray-400">• 3–20 chars, letters/numbers/underscores only</p>
                   )}
                 </>
               )}
