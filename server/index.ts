@@ -7,6 +7,8 @@ import searchRoutes from "./routes/search";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "./supabase";
 import checkUsernameRouter from "./routes/check-username";
+import updateUserHandler from "./api/update-user";
+import deleteUserHandler from "./api/delete-user";
 
 // ------------------- Setup -------------------
 const app = express();
@@ -93,6 +95,12 @@ app.use("/signup-user", signupUserRouter);
 
 // Check username availability route
 app.use("/check-username", checkUsernameRouter);
+
+// Update user route
+app.post("/api/update-user", updateUserHandler);
+
+// Delete user route
+app.post("/api/delete-user", deleteUserHandler);
 
 // Search shows by title (Supabase + fallback to TMDb)
 app.use("/api/search", searchRoutes);

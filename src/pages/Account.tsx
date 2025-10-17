@@ -10,7 +10,10 @@ export default function AccountDetails() {
     email: "",
   });
 
-  const API_BASE = import.meta.env.VITE_API_BASE_URL;
+  // ✅ Use Render backend or fallback to Vite env
+  const API_BASE =
+    import.meta.env.VITE_API_BASE_URL || "https://getgood-api.onrender.com";
+
   const [editMode, setEditMode] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
@@ -29,7 +32,11 @@ export default function AccountDetails() {
   useEffect(() => {
     const fetchProfile = async () => {
       setLoading(true);
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
       if (userError || !user) {
         setError("Unable to load account.");
         setLoading(false);
@@ -64,14 +71,15 @@ export default function AccountDetails() {
     const timeout = setTimeout(async () => {
       setCheckingUsername(true);
       try {
-        const { data } = await fetch(`${API_BASE}/api/check-username`, {
+        const res = await fetch(`${API_BASE}/api/check-username`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username: profile.username }),
-        }).then((res) => res.json());
+        });
 
+        const data = await res.json();
         setUsernameAvailable(!data.exists);
-      } catch (err) {
+      } catch {
         setUsernameAvailable(null);
       } finally {
         setCheckingUsername(false);
@@ -102,12 +110,17 @@ export default function AccountDetails() {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
-      if (!token) throw new Error("Not logged in.");
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!token || !user) throw new Error("Not logged in.");
 
       const res = await fetch(`${API_BASE}/api/update-user`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          userId: user.id,
           token,
           first_name: profile.first_name || null,
           last_name: profile.last_name || null,
@@ -115,7 +128,15 @@ export default function AccountDetails() {
         }),
       });
 
-      const result = await res.json();
+      // ✅ Prevent invalid JSON parse if empty body
+      const text = await res.text();
+      let result;
+      try {
+        result = text ? JSON.parse(text) : {};
+      } catch {
+        result = {};
+      }
+
       if (!res.ok) throw new Error(result.error || "Failed to update profile.");
 
       setSuccess("Profile updated successfully!");
@@ -127,6 +148,7 @@ export default function AccountDetails() {
     }
   };
 
+  // ✅ Change password
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -142,7 +164,9 @@ export default function AccountDetails() {
       return;
     }
 
-    const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
 
     if (updateError) {
       setError(updateError.message);
@@ -153,23 +177,38 @@ export default function AccountDetails() {
     }
   };
 
+  // ✅ Delete account
   const handleDeleteAccount = async () => {
-    if (!confirm("Are you sure you want to delete your account? Your account information and voting history will not be recovered. This cannot be undone.")) return;
+    if (
+      !confirm(
+        "Are you sure you want to delete your account? This cannot be undone."
+      )
+    )
+      return;
 
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user || !token) throw new Error("No active session.");
 
-      const res = await fetch("/api/delete-user", {
+      const res = await fetch(`${API_BASE}/api/delete-user`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id, token }),
       });
 
-      const result = await res.json();
+      const text = await res.text();
+      let result;
+      try {
+        result = text ? JSON.parse(text) : {};
+      } catch {
+        result = {};
+      }
+
       if (!res.ok) throw new Error(result.error || "Failed to delete account.");
 
       await supabase.auth.signOut();
@@ -179,12 +218,15 @@ export default function AccountDetails() {
     }
   };
 
-  if (loading) return <div className="text-gray-300 p-6">Loading account details...</div>;
+  if (loading)
+    return <div className="text-gray-300 p-6">Loading account details...</div>;
 
   return (
     <div className="min-h-screen bg-gray-800 flex flex-col items-center pt-24 px-4">
       <div className="w-full max-w-md bg-gray-900 rounded-2xl shadow-lg p-8">
-        <h2 className="text-3xl font-extrabold text-white text-center mb-6">Account Details</h2>
+        <h2 className="text-3xl font-extrabold text-white text-center mb-6">
+          Account Details
+        </h2>
 
         {/* Profile info */}
         <div className="flex flex-col gap-3">
@@ -196,10 +238,14 @@ export default function AccountDetails() {
               <input
                 type="text"
                 value={(profile as any)[field] || ""}
-                onChange={(e) => setProfile({ ...profile, [field]: e.target.value })}
+                onChange={(e) =>
+                  setProfile({ ...profile, [field]: e.target.value })
+                }
                 disabled={!editMode}
                 className={`p-2 rounded bg-gray-800 text-white border ${
-                  !editMode ? "opacity-60 cursor-not-allowed" : "border-gray-700"
+                  !editMode
+                    ? "opacity-60 cursor-not-allowed"
+                    : "border-gray-700"
                 } focus:outline-none focus:ring-2 focus:ring-blue-500`}
               />
               {field === "username" && editMode && (
@@ -207,11 +253,17 @@ export default function AccountDetails() {
                   {checkingUsername ? (
                     <p className="text-xs text-gray-400">Checking username...</p>
                   ) : usernameAvailable === false ? (
-                    <p className="text-xs text-red-400">Username already taken.</p>
+                    <p className="text-xs text-red-400">
+                      Username already taken.
+                    </p>
                   ) : usernameAvailable === true ? (
-                    <p className="text-xs text-green-400">Username available.</p>
+                    <p className="text-xs text-green-400">
+                      Username available.
+                    </p>
                   ) : (
-                    <p className="text-xs text-gray-400">• 3–20 chars, letters/numbers/underscores only</p>
+                    <p className="text-xs text-gray-400">
+                      • 3–20 chars, letters/numbers/underscores only
+                    </p>
                   )}
                 </>
               )}
@@ -234,7 +286,9 @@ export default function AccountDetails() {
                 onClick={handleSave}
                 disabled={saving}
                 className={`px-4 py-2 rounded text-white ${
-                  saving ? "bg-gray-600 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"
+                  saving
+                    ? "bg-gray-600 cursor-not-allowed"
+                    : "bg-green-600 hover:bg-green-700"
                 }`}
               >
                 Save
@@ -250,9 +304,15 @@ export default function AccountDetails() {
         </div>
 
         {/* Change Password */}
-        <form onSubmit={handlePasswordChange} className="mt-8 border-t border-gray-700 pt-6 flex flex-col gap-3">
-          <h3 className="text-xl text-white font-semibold mb-2">Change Password</h3>
+        <form
+          onSubmit={handlePasswordChange}
+          className="mt-8 border-t border-gray-700 pt-6 flex flex-col gap-3"
+        >
+          <h3 className="text-xl text-white font-semibold mb-2">
+            Change Password
+          </h3>
 
+          {/* New Password */}
           <div className="relative">
             <input
               type={showNew ? "text" : "password"}
@@ -269,6 +329,7 @@ export default function AccountDetails() {
             </div>
           </div>
 
+          {/* Confirm Password */}
           <div className="relative">
             <input
               type={showConfirm ? "text" : "password"}
