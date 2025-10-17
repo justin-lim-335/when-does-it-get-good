@@ -10,6 +10,7 @@ export default function AccountDetails() {
     email: "",
   });
 
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
   const [editMode, setEditMode] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
@@ -63,7 +64,7 @@ export default function AccountDetails() {
     const timeout = setTimeout(async () => {
       setCheckingUsername(true);
       try {
-        const { data } = await fetch("/api/check-username", {
+        const { data } = await fetch(`${API_BASE}/api/check-username`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username: profile.username }),
@@ -103,7 +104,7 @@ export default function AccountDetails() {
       const token = sessionData?.session?.access_token;
       if (!token) throw new Error("Not logged in.");
 
-      const res = await fetch("/api/update-user", {
+      const res = await fetch(`${API_BASE}/api/update-user`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -153,7 +154,7 @@ export default function AccountDetails() {
   };
 
   const handleDeleteAccount = async () => {
-    if (!confirm("Are you sure you want to delete your account? This cannot be undone.")) return;
+    if (!confirm("Are you sure you want to delete your account? Your account information and voting history will not be recovered. This cannot be undone.")) return;
 
     try {
       const { data: sessionData } = await supabase.auth.getSession();
