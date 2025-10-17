@@ -18,6 +18,8 @@ export default function SignUp() {
   const isValidPassword = (pwd: string) => pwd.length >= 8 && !/\s/.test(pwd);
   const isPasswordMatch = password === confirmPassword;
 
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+
   const getValidationColor = (isValid: boolean | null) => {
     if (isValid === null) return "text-gray-400";
     return isValid ? "text-green-400" : "text-red-400";
@@ -39,7 +41,7 @@ export default function SignUp() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/signup-user", {
+      const res = await fetch(`${API_BASE_URL}/api/signup-user`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
