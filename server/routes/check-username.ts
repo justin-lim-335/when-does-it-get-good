@@ -1,25 +1,35 @@
-// backend/routes/check-username.ts
 import express from "express";
-import { supabaseAdmin } from "../supabase";
+import { createClient } from "@supabase/supabase-js";
+
 const router = express.Router();
 
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY! // service role for unrestricted reads
+);
+
 router.post("/", async (req, res) => {
-  const { username } = req.body;
+  try {
+    const { username } = req.body;
 
-  if (!username) return res.status(400).json({ error: "Missing username" });
+    if (!username || typeof username !== "string") {
+      return res.status(400).json({ error: "Invalid username" });
+    }
 
-  const { data, error } = await supabaseAdmin
-    .from("users")
-    .select("id")
-    .eq("username", username)
-    .single();
+    // ✅ Query your users table to see if username exists
+    const { data, error } = await supabase
+      .from("users")
+      .select("id")
+      .eq("username", username)
+      .limit(1);
 
-  if (error && error.code !== "PGRST116") {
-    // PGRST116 = "No rows found"
-    return res.status(500).json({ error: error.message });
+    if (error) throw error;
+
+    return res.status(200).json({ exists: data.length > 0 });
+  } catch (err) {
+    console.error("Error checking username:", err);
+    return res.status(500).json({ error: "Internal server error" });
   }
-
-  res.json({ exists: !!data });
 });
 
 export default router;

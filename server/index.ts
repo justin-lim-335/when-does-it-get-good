@@ -1,5 +1,5 @@
 // server/index.ts
-import "dotenv/config";
+import dotenv from "dotenv";
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
@@ -12,6 +12,7 @@ import updateUserHandler from "./routes/update-user";
 import deleteUserHandler from "./routes/delete-user";
 
 // ------------------- Setup -------------------
+dotenv.config();
 const app = express();
 app.use(
   cors({
