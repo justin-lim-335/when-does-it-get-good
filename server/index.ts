@@ -128,7 +128,7 @@ app.get("/shows/popular", async (req, res) => {
     // --- Recently voted (Supabase join) ---
     const { data: recentVotesRaw, error: recentError } = await supabase
       .from("votes")
-      .select("*, shows(*)")
+      .select("*, shows!fk_votes_show(*)")
       .order("created_at", { ascending: false });
 
     if (recentError) throw recentError;
