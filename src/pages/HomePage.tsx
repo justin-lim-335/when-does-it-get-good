@@ -32,7 +32,7 @@ export default function HomePage() {
   }, []);
 
   const normalizeShow = (s: any): Show => ({
-    tmdb_id: s.tmdb_id || s.id,
+    tmdb_id: s.tmdb_id || s.id || s.imdb_id,
     title: s.title || s.name || "Untitled",
     poster_path: s.poster_path || "/placeholder.png",
     first_air_date: s.first_air_date || "Unknown",
