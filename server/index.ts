@@ -126,10 +126,12 @@ app.get("/shows/popular", async (req, res) => {
     ]);
 
     // --- Recently voted (Supabase join) ---
-    const { data: recentVotesRaw } = await supabase
+    const { data: recentVotesRaw, error: recentError } = await supabase
       .from("votes")
       .select("*, shows(*)")
       .order("created_at", { ascending: false });
+
+    if (recentError) throw recentError;
 
     // Deduplicate by show_tmdb_id so a show appears only once
     const seen = new Set<number | string>();
@@ -140,34 +142,47 @@ app.get("/shows/popular", async (req, res) => {
         seen.add(v.show_tmdb_id);
       }
     }
-    // Only keep up to 24 unique shows
     recentVotes.splice(24);
 
     // --- Most voted (aggregate by show) ---
     const { data: votesData, error: votesError } = await supabase
       .from("votes")
-      .select("show_tmdb_id, shows(title, poster_path, tmdb_id)");
+      .select("show_tmdb_id");
 
-    if (votesError) {
-      throw votesError;
+    if (votesError) throw votesError;
+
+    if (!votesData || votesData.length === 0) {
+      return res.json({
+        recentlyReleased: (tmdbReleased.results || []).slice(0, 24),
+        recentlyVoted: [],
+        mostVoted: [],
+        popularAnime: (tmdbAnime.results || []).slice(0, 24),
+        popularDramas: (tmdbDrama.results || []).slice(0, 24),
+      });
     }
 
-    // Aggregate votes by show_tmdb_id
-    const voteCounts: { [key: string]: { count: number; shows: any } } = {};
-    (votesData || []).forEach((vote: any) => {
-      const key = String(vote.show_tmdb_id);
-      if (!voteCounts[key]) {
-        voteCounts[key] = { count: 0, shows: vote.shows };
+    // Aggregate votes by show ID
+    const voteCounts: Record<string, number> = {};
+    for (const v of votesData) {
+      if (v.show_tmdb_id) {
+        voteCounts[v.show_tmdb_id] = (voteCounts[v.show_tmdb_id] || 0) + 1;
       }
-      voteCounts[key].count += 1;
-    });
+    }
 
-    // Get top 10 most voted shows
-    const mostVoted = Object.values(voteCounts)
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
+    // Sort and take top 24 IDs
+    const topIds = Object.entries(voteCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 24)
+      .map(([id]) => Number(id));
 
-    // --- Helper to normalize any source into a consistent shape ---
+    // Fetch show details for top voted IDs
+    const { data: showsData, error: showsError } = await supabase
+      .from("shows")
+      .select("tmdb_id, title, poster_path, first_air_date")
+      .in("tmdb_id", topIds);
+
+    if (showsError) throw showsError;
+
     const normalizeShow = (s: any) => ({
       tmdb_id: s.tmdb_id || s.id,
       title: s.title || s.name,
@@ -177,13 +192,13 @@ app.get("/shows/popular", async (req, res) => {
 
     res.json({
       recentlyReleased: (tmdbReleased.results || []).slice(0, 24).map(normalizeShow),
-      recentlyVoted: (recentVotes || []).map((v: any) => v.shows).filter(Boolean).map(normalizeShow),
-      mostVoted: (mostVoted || []).map((v: any) => v.shows).filter(Boolean).map(normalizeShow),
+      recentlyVoted: recentVotes.map((v: any) => v.shows).filter(Boolean).map(normalizeShow),
+      mostVoted: (showsData || []).map(normalizeShow),
       popularAnime: (tmdbAnime.results || []).slice(0, 24).map(normalizeShow),
       popularDramas: (tmdbDrama.results || []).slice(0, 24).map(normalizeShow),
     });
   } catch (err) {
-    console.error("Homepage fetch error:", err);
+    console.error("❌ Homepage fetch error:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });
