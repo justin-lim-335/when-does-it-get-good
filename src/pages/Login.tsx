@@ -25,7 +25,8 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      let loginEmail = emailOrUsername.trim();
+      let loginInput = emailOrUsername.trim();
+      let loginEmail = loginInput;
 
       // Check if input is NOT an email
       const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginEmail);
@@ -45,12 +46,16 @@ export default function LoginPage() {
       }
 
       // Now sign in with email (or looked-up email)
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
         email: loginEmail,
         password,
       });
 
       if (signInError) throw signInError;
+
+      if (!authData?.session) {
+        throw new Error("Login failed: no session created.");
+      }
 
       navigate("/"); // redirect after login
     } catch (err: any) {

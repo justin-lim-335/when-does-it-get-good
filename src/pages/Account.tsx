@@ -14,7 +14,6 @@ export default function AccountDetails() {
   const API_BASE =
     import.meta.env.VITE_API_BASE_URL || "https://getgood-api.onrender.com";
 
-  const [editMode, setEditMode] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -64,33 +63,29 @@ export default function AccountDetails() {
   const isValidUsername = (uname: string) => /^[A-Za-z0-9_]{3,20}$/.test(uname);
 
   // Debounced username availability check
-  useEffect(() => {
-    if (!editMode || !profile.username || !isValidUsername(profile.username)) {
+  const timeout = setTimeout(async () => {
+    setCheckingUsername(true);
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Check for duplicate usernames but exclude current user
+      const { data: existingUser } = await supabase
+        .from("users")
+        .select("id, auth_id")
+        .eq("username", profile.username)
+        .neq("auth_id", user.id)
+        .maybeSingle();
+
+      setUsernameAvailable(!existingUser);
+    } catch (err) {
+      console.error("Username check failed:", err);
       setUsernameAvailable(null);
-      return;
+    } finally {
+      setCheckingUsername(false);
     }
-
-    const timeout = setTimeout(async () => {
-      setCheckingUsername(true);
-      try {
-        const res = await fetch(`${API_BASE}/api/check-username`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username: profile.username }),
-        });
-
-        const data = await res.json();
-        setUsernameAvailable(!data.exists);
-      } catch {
-        setUsernameAvailable(null);
-      } finally {
-        setCheckingUsername(false);
-      }
-    }, 500);
-
-    return () => clearTimeout(timeout);
-  }, [profile.username, editMode]);
-
+  }, 500);
 // inside AccountDetails.tsx
 
   // ✅ Save profile updates
@@ -124,7 +119,6 @@ export default function AccountDetails() {
       if (updateError) throw updateError;
 
       setSuccess("Profile updated successfully!");
-      setEditMode(false);
 
       // Refresh profile state from database
       const { data, error: fetchError } = await supabase
@@ -244,14 +238,9 @@ export default function AccountDetails() {
                 onChange={(e) =>
                   setProfile({ ...profile, [field]: e.target.value })
                 }
-                disabled={!editMode}
-                className={`p-2 rounded bg-gray-800 text-white border ${
-                  !editMode
-                    ? "opacity-60 cursor-not-allowed"
-                    : "border-gray-700"
-                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                className="p-2 rounded bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              {field === "username" && editMode && (
+              {field === "username" && (
                 <>
                   {profile.username === "" ? (
                     <p className="text-xs text-gray-400">Enter a username (optional)</p>
@@ -272,36 +261,19 @@ export default function AccountDetails() {
           ))}
         </div>
 
-        {/* Edit/Save controls */}
-        <div className="flex justify-between mt-6">
-          {!editMode ? (
-            <button
-              onClick={() => setEditMode(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Edit
-            </button>
-          ) : (
-            <>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className={`px-4 py-2 rounded text-white ${
-                  saving
-                    ? "bg-gray-600 cursor-not-allowed"
-                    : "bg-green-600 hover:bg-green-700"
-                }`}
-              >
-                Save
-              </button>
-              <button
-                onClick={() => setEditMode(false)}
-                className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-            </>
-          )}
+        {/* Save control */}
+        <div className="flex justify-center mt-6">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className={`px-6 py-2 rounded text-white font-semibold ${
+              saving
+                ? "bg-gray-600 cursor-not-allowed"
+                : "bg-green-600 hover:bg-green-700"
+            }`}
+          >
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
         </div>
 
         {/* Change Password */}
