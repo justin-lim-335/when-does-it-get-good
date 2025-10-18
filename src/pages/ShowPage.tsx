@@ -9,6 +9,7 @@ interface Episode {
   episode_number: number;
   absolute_number: number;
   name: string;
+  still_path?: string;
 }
 
 interface Show {
@@ -35,24 +36,55 @@ export default function ShowPage() {
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [selectedEpisode, setSelectedEpisode] = useState<number | null>(null);
   const [average, setAverage] = useState<number | null>(null);
+  const [imdbRating, setImdbRating] = useState<string | null>(null);
+  const [imdbVotes, setImdbVotes] = useState<string | null>(null);
   const [userVote, setUserVote] = useState<number | null>(null);
   const [isChangingVote, setIsChangingVote] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Fetch show details and episodes
+
   useEffect(() => {
     if (!tmdb_id) return;
+
+    setUserVote(null);
+    setSelectedEpisode(null);
+    setIsChangingVote(false);
+    setAverage(null);
 
     const fetchShow = async () => {
       setLoading(true);
       try {
+        // Fetch show details from TMDB
         const res = await fetch(
-          `https://api.themoviedb.org/3/tv/${tmdb_id}?api_key=${TMDB_API_KEY}`
+          `https://api.themoviedb.org/3/tv/${tmdb_id}?api_key=${TMDB_API_KEY}&append_to_response=external_ids`
         );
         const data = await res.json();
-        const formattedShow = { ...data, title: data.name || data.title };
+
+        // Extract genre names
+        const genreNames = data.genres ? data.genres.map((g: any) => g.name).join(", ") : "N/A";
+
+        const formattedShow = {
+          ...data,
+          title: data.name || data.title,
+          genre: genreNames,
+        };
         setShow(formattedShow);
 
+        // IMDb ratings (if external_ids exist)
+        if (data.external_ids?.imdb_id) {
+          const omdbRes = await fetch(
+            `https://www.omdbapi.com/?i=${data.external_ids.imdb_id}&apikey=${import.meta.env.VITE_OMDB_API_KEY}`
+          );
+          const omdbData = await omdbRes.json();
+
+          if (omdbData && omdbData.Response !== "False") {
+            setImdbRating(omdbData.imdbRating || null);
+            setImdbVotes(omdbData.imdbVotes || null);
+          }
+        }
+
+        // Fetch all episodes
         let allEpisodes: Episode[] = [];
         let absoluteCounter = 1;
 
@@ -61,6 +93,7 @@ export default function ShowPage() {
             `https://api.themoviedb.org/3/tv/${tmdb_id}/season/${season}?api_key=${TMDB_API_KEY}`
           );
           const seasonData = await seasonRes.json();
+
           if (seasonData.episodes) {
             seasonData.episodes.forEach((ep: any) => {
               allEpisodes.push({
@@ -68,6 +101,7 @@ export default function ShowPage() {
                 episode_number: ep.episode_number,
                 absolute_number: absoluteCounter++,
                 name: ep.name,
+                still_path: ep.still_path,
               });
             });
           }
@@ -83,6 +117,7 @@ export default function ShowPage() {
 
     fetchShow();
   }, [tmdb_id]);
+
 
   // Fetch average
   const fetchAverage = async () => {
@@ -193,6 +228,32 @@ export default function ShowPage() {
   };
 
 
+  // Remove Vote
+  const removeVote = async () => {
+    if (!user) return;
+    if (!window.confirm("Are you sure you want to remove your vote?")) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/votes/${user.id}/${Number(tmdb_id)}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        return alert(`Failed to remove vote: ${data.error}`);
+      }
+
+      setUserVote(null);
+      setSelectedEpisode(null);
+      setIsChangingVote(false);
+      fetchAverage();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to remove vote.");
+    }
+  };
+
+
   // Average indicator setup
   const averageEpisode =
     average && episodes.length > 0
@@ -238,7 +299,7 @@ return (
       )}
 
       {/* RIGHT COLUMN — Voting Section */}
-      <div className="bg-gray-500 rounded-2xl shadow-md p-6 flex flex-col gap-6">
+      <div className="bg-gray-600 rounded-2xl shadow-md p-6 flex flex-col gap-3">
         {!userVote || isChangingVote ? (
           <>
             <h2 className="text-2xl font-semibold text-gray-200">Submit Your Vote</h2>
@@ -279,20 +340,26 @@ return (
             )}
             <button
               onClick={() => setIsChangingVote(true)}
-              className="bg-black hover:bg-gray-800 text-white font-medium py-3 px-4 rounded-md transition"
+              className="bg-black hover:bg-gray-800 text-white font-medium py-2 px-4 rounded-md transition"
             >
               Change Vote
+            </button>
+            <button
+              onClick={removeVote}
+              className="text-red-500 underline mt-1 bg-transparent hover:text-red-600 p-0"
+            >
+              Remove Vote
             </button>
           </>
         )}
 
         {/* Average "Gets Good" line */}
-        <div className="mt-6 border-t pt-6 text-center relative">
-          <h3 className="text-xl font-semibold text-gray-200 mb-6">
+        <div className="mt-3 border-t pt-4 text-center relative">
+          <h3 className="text-xl font-semibold text-gray-200 mb-4">
             When Does <span className="italic text-blue-400">{show?.title}</span> Get Good?
           </h3>
 
-          <div className="relative w-full h-16 flex items-center justify-center">
+          <div className="relative w-full flex items-center justify-center">
             {/* Base black line */}
             <div className="w-3/4 h-[4px] bg-black relative">
               {/* Tangential black dots */}
@@ -313,12 +380,23 @@ return (
 
             {/* Bubble below line, always centered */}
             <div
-              className={`absolute top-full mt-3 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg shadow text-center max-w-xs ${
+              className={`absolute top-full mt-4 left-1/2 -translate-x-1/2 px-4 py-4 rounded-lg shadow text-center max-w-xs flex flex-col items-center ${
                 hasVotes ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-600"
               }`}
+
+              style={{
+                minHeight: averageEpisode?.still_path ? '100px' : 'auto', // <-- dynamically expand if thumbnail exists
+              }}
             >
               {hasVotes ? (
                 <>
+                  {averageEpisode?.still_path && (
+                    <img
+                      src={`${TMDB_IMAGE_BASE}${averageEpisode.still_path}`}
+                      alt={averageEpisode.name}
+                      className="w-32 h-auto mx-auto mb-2 rounded-md shadow-lg"
+                    />
+                  )}
                   <p className="font-bold">S{averageEpisode?.season_number}E{averageEpisode?.episode_number}</p>
                   <p className="italic">{averageEpisode?.name}</p>
                 </>

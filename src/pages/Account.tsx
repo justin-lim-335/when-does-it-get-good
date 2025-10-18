@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { FaEye as EyeIcon, FaEyeSlash as EyeOffIcon } from "react-icons/fa6";
 
@@ -10,7 +10,6 @@ export default function AccountDetails() {
     email: "",
   });
 
-  // ✅ Use Render backend or fallback to Vite env
   const API_BASE =
     import.meta.env.VITE_API_BASE_URL || "https://getgood-api.onrender.com";
 
@@ -20,14 +19,16 @@ export default function AccountDetails() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [usernameTouched, setUsernameTouched] = useState(false);
 
-  // password change states
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load profile info
   useEffect(() => {
@@ -50,44 +51,56 @@ export default function AccountDetails() {
         .eq("auth_id", user.id)
         .single();
 
-      if (fetchError) {
-        setError(fetchError.message);
-      } else if (data) {
-        setProfile(data);
-      }
+      if (fetchError) setError(fetchError.message);
+      else if (data) setProfile(data);
+
       setLoading(false);
     };
     fetchProfile();
   }, []);
 
-  const isValidUsername = (uname: string) => /^[A-Za-z0-9_]{3,20}$/.test(uname);
-
-  // Debounced username availability check
-  const timeout = setTimeout(async () => {
-    setCheckingUsername(true);
-    try {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Check for duplicate usernames but exclude current user
-      const { data: existingUser } = await supabase
-        .from("users")
-        .select("id, auth_id")
-        .eq("username", profile.username)
-        .neq("auth_id", user.id)
-        .maybeSingle();
-
-      setUsernameAvailable(!existingUser);
-    } catch (err) {
-      console.error("Username check failed:", err);
+  // ✅ Debounced username availability check
+  useEffect(() => {
+    if (!profile.username) {
       setUsernameAvailable(null);
-    } finally {
       setCheckingUsername(false);
+      return;
     }
-  }, 500);
-// inside AccountDetails.tsx
 
+    if (!/^[A-Za-z0-9_]{3,20}$/.test(profile.username)) {
+      setUsernameAvailable(null);
+      setCheckingUsername(false);
+      return;
+    }
+
+    setCheckingUsername(true);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: existingUser } = await supabase
+          .from("users")
+          .select("id, auth_id")
+          .eq("username", profile.username)
+          .neq("auth_id", user.id)
+          .maybeSingle();
+
+        setUsernameAvailable(!existingUser);
+      } catch (err) {
+        console.error("Username check failed:", err);
+        setUsernameAvailable(null);
+      } finally {
+        setCheckingUsername(false);
+      }
+    }, 500);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [profile.username]);
   // ✅ Save profile updates
   const handleSave = async () => {
     setSaving(true);
@@ -226,6 +239,7 @@ export default function AccountDetails() {
         </h2>
 
         {/* Profile info */}
+        {/* Profile info */}
         <div className="flex flex-col gap-3">
           {["first_name", "last_name", "username"].map((field) => (
             <div key={field} className="flex flex-col">
@@ -238,6 +252,7 @@ export default function AccountDetails() {
                 onChange={(e) =>
                   setProfile({ ...profile, [field]: e.target.value })
                 }
+                onFocus={() => setUsernameTouched(true)}
                 className="p-2 rounded bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               {field === "username" && (
@@ -245,15 +260,19 @@ export default function AccountDetails() {
                   {profile.username === "" ? (
                     <p className="text-xs text-gray-400">Enter a username (optional)</p>
                   ) : !/^[A-Za-z0-9_]{3,20}$/.test(profile.username) ? (
-                    <p className="text-xs text-red-400">Invalid: 3–20 chars, letters/numbers/underscores only</p>
+                    <p className="text-xs text-red-400">
+                      Invalid: 3–20 chars, letters/numbers/underscores only
+                    </p>
                   ) : checkingUsername ? (
                     <p className="text-xs text-gray-400">Checking username...</p>
                   ) : usernameAvailable === false ? (
                     <p className="text-xs text-red-400">Username already taken.</p>
-                  ) : usernameAvailable === true ? (
+                  ) : usernameAvailable === true && usernameTouched ? (
                     <p className="text-xs text-green-400">Username available!</p>
                   ) : (
-                    <p className="text-xs text-gray-400">• 3–20 chars, letters/numbers/underscores only</p>
+                    <p className="text-xs text-gray-400">
+                      • 3–20 chars, letters/numbers/underscores only
+                    </p>
                   )}
                 </>
               )}

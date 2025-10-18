@@ -21,7 +21,7 @@ export default function Header() {
   const [suggestions, setSuggestions] = useState<Show[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [accountDropdown, setAccountDropdown] = useState(false);
-  const [displayName, setDisplayName] = useState("user");
+  const [displayName, setDisplayName] = useState("User");
 
   const accountRef = useRef<HTMLDivElement>(null);
 

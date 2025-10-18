@@ -28,36 +28,48 @@ export default function LoginPage() {
       let loginInput = emailOrUsername.trim();
       let loginEmail = loginInput;
 
-      // Check if input is NOT an email
-      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginEmail);
-      if (!isEmail) {
-        // Treat it as a username and look up the user's email
-        const { data, error: lookupError } = await supabase
-          .from("users")
-          .select("email")
-          .eq("username", loginEmail)
-          .single();
+      // Regex to check if it's an email
+      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginInput);
 
-        if (lookupError || !data?.email) {
+      if (!isEmail) {
+        // Look up user email by username via Supabase REST API (avoids 406)
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/users?select=email&username=ilike.${encodeURIComponent(
+            loginInput
+          )}`,
+          {
+            headers: {
+              apikey: import.meta.env.VITE_SUPABASE_ANON_KEY!,
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY!}`,
+              Accept: "application/json",
+            },
+          }
+        );
+
+        if (!response.ok) {
+          console.error("Supabase fetch error:", response.status, await response.text());
+          throw new Error("Failed to look up username.");
+        }
+
+        const data = await response.json();
+
+        if (!data || data.length === 0 || !data[0].email) {
           throw new Error("No account found for that username.");
         }
 
-        loginEmail = data.email; // replace with looked-up email
+        loginEmail = data[0].email; // replace with looked-up email
       }
 
-      // Now sign in with email (or looked-up email)
+      // Sign in using the resolved email
       const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
         email: loginEmail,
         password,
       });
 
       if (signInError) throw signInError;
+      if (!authData?.session) throw new Error("Login failed: no session created.");
 
-      if (!authData?.session) {
-        throw new Error("Login failed: no session created.");
-      }
-
-      navigate("/"); // redirect after login
+      navigate("/"); // redirect to homepage
     } catch (err: any) {
       console.error("Login error:", err);
       setError(err.message || "Failed to log in. Please try again.");
@@ -65,6 +77,7 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
 
 
 
@@ -102,6 +115,9 @@ export default function LoginPage() {
             className="p-2 rounded bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={emailOrUsername}
             onChange={(e) => setEmailOrUsername(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleLogin(e as any)
+            }}
           />
 
           {/* Password Field */}
@@ -112,6 +128,9 @@ export default function LoginPage() {
               className="w-full p-2 rounded text-white bg-gray-800 pr-10"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleLogin(e as any)
+              }}
             />
             <button
               type="button"
