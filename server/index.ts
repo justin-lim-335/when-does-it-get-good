@@ -13,7 +13,7 @@ import deleteUserHandler from "./routes/delete-user";
 import submitVoteRouter from "./routes/submit-vote";
 import updateVoteRouter from "./routes/update-vote";
 import deleteVoteRouter from "./routes/delete-vote";
-import getVotesRouter from "./routes/get-votes";
+import getVotesRouter from "./routes/get-vote";
 
 // ------------------- Setup -------------------
 dotenv.config();
@@ -328,10 +328,10 @@ app.post("/api/delete-user", async (req, res) => {
 });
 
 // ------------------- Vote routes -------------------
-app.use("/api/submit-vote", submitVoteRouter);
-app.use("/api/update-vote", updateVoteRouter);
-app.use("/api/delete-vote", deleteVoteRouter);
-app.use("/api/get-votes", getVotesRouter);
+app.post("/submit-vote", submitVoteRouter);
+app.patch("/update-vote/:user_id/:show_tmdb_id", updateVoteRouter);
+app.delete("/delete-vote/:user_id/:show_tmdb_id", deleteVoteRouter);
+app.get("/votes/:user_id/:show_tmdb_id", getVotesRouter);
 
 // ------------------- Start server -------------------
 const PORT = process.env.PORT || 3001;
