@@ -16,6 +16,10 @@ html, body, #root {
 html, body {
   @apply bg-gray-900 font-sans text-gray-100 transition-colors duration-300;
 }
+/* Scroll bar behavior */
+html {
+  scroll-behavior: smooth;
+}
 
 h1, h2, h3, h4, h5, h6 {
   @apply font-heading font-semibold;

@@ -55,13 +55,6 @@ export default function PrivacyPolicy() {
           </li>
 
           <li>
-            <strong>Children’s Access</strong>
-            <ul className="list-disc list-inside ml-6 mt-1 space-y-1">
-              <li>The Site does not restrict access by age.</li>
-            </ul>
-          </li>
-
-          <li>
             <strong>Changes</strong>
             <ul className="list-disc list-inside ml-6 mt-1 space-y-1">
               <li>We may update this Privacy Policy at any time. Continued use of the Site constitutes acceptance of the revised policy.</li>
