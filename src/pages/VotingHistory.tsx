@@ -1,7 +1,16 @@
-// src/pages/VotingHistory.tsx
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
-import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+
+interface Vote {
+  id: number;
+  show_tmdb_id: number;
+  absolute_number: number;
+  season_number: number;
+  episode_number: number;
+  episode_title: string;
+  updated_at: string;
+}
 
 interface Show {
   tmdb_id: number;
@@ -10,188 +19,163 @@ interface Show {
   genre?: string;
 }
 
-interface Vote {
-  id: number;
-  last_voted: string;
-  season: number;
-  episode: number;
-  episode_title: string;
-  show: Show;
-}
+const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w92"; // small poster
+
+type SortOption = "recent" | "oldest" | "az" | "za";
 
 export default function VotingHistory() {
+  const { user } = useAuth();
   const [votes, setVotes] = useState<Vote[]>([]);
+  const [shows, setShows] = useState<Record<number, Show>>({});
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [sortOption, setSortOption] = useState("recent"); // 'recent', 'az', 'za'
-  const navigate = useNavigate();
+  const [sortOption, setSortOption] = useState<SortOption>("recent");
 
+  // Fetch votes for current user
   useEffect(() => {
+    if (!user) return;
+
     const fetchVotes = async () => {
       setLoading(true);
       try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) throw new Error("Not logged in.");
-
         const { data, error } = await supabase
           .from("votes")
-          .select(`
-            id,
-            last_voted,
-            season,
-            episode,
-            episode_title,
-            show:shows!votes_show_tmdb_id_fkey (
-              tmdb_id,
-              title,
-              poster_path,
-              genre
-            )
-          `)
+          .select("*")
           .eq("user_id", user.id)
-          .order("last_voted", { ascending: false });
+          .order("created_at", { ascending: false });
 
         if (error) throw error;
-
-        const formattedVotes: Vote[] = (data || []).map((v: any) => ({
-          id: v.id,
-          last_voted: v.last_voted,
-          season: v.season,
-          episode: v.episode,
-          episode_title: v.episode_title,
-          show: v.show || {
-            tmdb_id: 0,
-            title: "Unknown",
-            poster_path: "/placeholder.png",
-            genre: "Unknown",
-          },
-        }));
-
-        setVotes(formattedVotes);
+        if (data) setVotes(data);
       } catch (err) {
-        console.error("❌ Failed to fetch votes:", err);
+        console.error("Failed to fetch votes:", err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchVotes();
-  }, []);
+  }, [user]);
 
-  const filteredAndSortedVotes = useMemo(() => {
-    let result = votes.filter((v) =>
-      v.show.title.toLowerCase().includes(search.toLowerCase())
-    );
+  // Fetch TMDb show data for all unique show IDs
+  useEffect(() => {
+    if (votes.length === 0) return;
+
+    const fetchShows = async () => {
+      const uniqueIds = Array.from(new Set(votes.map((v) => v.show_tmdb_id)));
+      const showsData: Record<number, Show> = {};
+
+      await Promise.all(
+        uniqueIds.map(async (tmdb_id) => {
+          try {
+            const res = await fetch(`https://api.themoviedb.org/3/tv/${tmdb_id}?api_key=${TMDB_API_KEY}`);
+            const data = await res.json();
+            showsData[tmdb_id] = {
+              tmdb_id,
+              title: data.name || data.title,
+              poster_path: data.poster_path,
+              genre: data.genres?.map((g: any) => g.name).join(", "),
+            };
+          } catch (err) {
+            console.error(`Failed to fetch show ${tmdb_id}:`, err);
+          }
+        })
+      );
+
+      setShows(showsData);
+    };
+
+    fetchShows();
+  }, [votes]);
+
+  // Sorting logic
+  const sortedVotes = [...votes].sort((a, b) => {
+    const showA = shows[a.show_tmdb_id]?.title || "";
+    const showB = shows[b.show_tmdb_id]?.title || "";
 
     switch (sortOption) {
-      case "az":
-        result.sort((a, b) => a.show.title.localeCompare(b.show.title));
-        break;
-      case "za":
-        result.sort((a, b) => b.show.title.localeCompare(a.show.title));
-        break;
-      case "oldest":
-        result.sort(
-          (a, b) =>
-            new Date(a.last_voted).getTime() - new Date(b.last_voted).getTime()
-        );
-        break;
       case "recent":
+        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      case "oldest":
+        return new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime();
+      case "az":
+        return showA.localeCompare(showB);
+      case "za":
+        return showB.localeCompare(showA);
       default:
-        result.sort(
-          (a, b) =>
-            new Date(b.last_voted).getTime() - new Date(a.last_voted).getTime()
-        );
-        break;
+        return 0;
     }
+  });
 
-    return result;
-  }, [votes, search, sortOption]);
+  if (!user) {
+    return <p className="text-gray-200 p-6">You must be logged in to see your voting history.</p>;
+  }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 py-16 px-6">
-      <h1 className="text-4xl font-bold mb-8 text-center text-white">
-        Your Voting History
-      </h1>
+    <div className="min-h-screen bg-gray-800 p-6">
+      <h1 className="text-3xl text-gray-100 font-bold mb-6">Your Voting History</h1>
+
+      <div className="mb-4">
+        <label className="text-gray-200 mr-2">Sort by:</label>
+        <select
+          value={sortOption}
+          onChange={(e) => setSortOption(e.target.value as SortOption)}
+          className="p-2 rounded-md bg-gray-700 text-gray-100"
+        >
+          <option value="recent">Most Recent</option>
+          <option value="oldest">Oldest</option>
+          <option value="az">Show A-Z</option>
+          <option value="za">Show Z-A</option>
+        </select>
+      </div>
 
       {loading ? (
-        <p className="text-center text-gray-400 text-lg">Loading your votes...</p>
-      ) : votes.length === 0 ? (
-        <p className="text-center text-gray-400 text-lg">
-          You haven’t voted on any episodes yet.
-        </p>
+        <p className="text-gray-200">Loading votes...</p>
+      ) : sortedVotes.length === 0 ? (
+        <p className="text-gray-200">No votes placed yet.</p>
       ) : (
-        <>
-          <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-            <input
-              type="text"
-              placeholder="Search shows..."
-              className="w-full sm:w-1/2 px-4 py-2 rounded-lg bg-gray-800 text-gray-200 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+        <table className="w-full text-gray-100 border-collapse">
+          <thead>
+            <tr className="border-b border-gray-500">
+              <th className="text-left p-2">Show</th>
+              <th className="text-left p-2">Episode</th>
+              <th className="text-left p-2">Genre</th>
+              <th className="text-left p-2">Last Voted</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedVotes.map((vote) => {
+              const show = shows[vote.show_tmdb_id];
+              if (!show) return null;
 
-            <select
-              value={sortOption}
-              onChange={(e) => setSortOption(e.target.value)}
-              className="px-4 py-2 rounded-lg bg-gray-800 text-gray-200 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="recent">Most Recent</option>
-              <option value="oldest">Oldest</option>
-              <option value="az">A → Z</option>
-              <option value="za">Z → A</option>
-            </select>
-          </div>
-
-          <div className="overflow-x-auto bg-gray-800 rounded-xl shadow-lg border border-gray-700">
-            <table className="w-full table-auto">
-              <thead className="bg-gray-700 text-gray-200 text-sm uppercase tracking-wide">
-                <tr>
-                  <th className="p-3 text-left">Show</th>
-                  <th className="p-3 text-left">Episode</th>
-                  <th className="p-3 text-left">Genre</th>
-                  <th className="p-3 text-left">Last Voted</th>
+              return (
+                <tr key={vote.id} className="border-b border-gray-700">
+                  <td className="p-2 flex items-center gap-2">
+                    {show.poster_path && (
+                      <a href={`/show/${show.tmdb_id}`}>
+                        <img
+                          src={`${TMDB_IMAGE_BASE}${show.poster_path}`}
+                          alt={show.title}
+                          className="w-12 h-auto rounded-sm hover:brightness-90 transition"
+                        />
+                      </a>
+                    )}
+                    <a
+                      href={`/show/${show.tmdb_id}`}
+                      className="underline hover:text-gray-300 transition"
+                    >
+                      {show.title}
+                    </a>
+                  </td>
+                  <td className="p-2">
+                    S{vote.season_number}E{vote.episode_number} — {vote.episode_title}
+                  </td>
+                  <td className="p-2">{show.genre || "N/A"}</td>
+                  <td className="p-2">{new Date(vote.updated_at).toLocaleString()}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {filteredAndSortedVotes.map((vote) => (
-                  <tr
-                    key={vote.id}
-                    className="border-t border-gray-700 hover:bg-gray-700/50 transition cursor-pointer"
-                    onClick={() => navigate(`/shows/${vote.show.tmdb_id}`)}
-                  >
-                    <td className="flex items-center gap-3 p-3">
-                      <img
-                        src={
-                          vote.show.poster_path
-                            ? `https://image.tmdb.org/t/p/w92${vote.show.poster_path}`
-                            : "/placeholder.png"
-                        }
-                        alt={vote.show.title}
-                        className="w-10 h-14 rounded-md object-cover"
-                      />
-                      <span className="underline text-blue-400 hover:text-blue-300">
-                        {vote.show.title}
-                      </span>
-                    </td>
-                    <td className="p-3 text-gray-300">
-                      S{vote.season}E{vote.episode} —{" "}
-                      <span className="italic text-gray-400">
-                        {vote.episode_title}
-                      </span>
-                    </td>
-                    <td className="p-3 text-gray-300">{vote.show.genre}</td>
-                    <td className="p-3 text-gray-400">
-                      {new Date(vote.last_voted).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
+              );
+            })}
+          </tbody>
+        </table>
       )}
     </div>
   );

@@ -11,7 +11,7 @@ export default function Waiting() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-800 px-4 text-white">
+    <div className="min-h-screen flex flex-col items-center justify-start pt-24 bg-gray-800 px-4">
       <img src={logo} alt="Logo" className="w-32 mb-6" />
       <div className="bg-gray-900 p-8 rounded-2xl shadow text-center max-w-lg">
         <h2 className="text-2xl font-bold mb-2">Check your email</h2>
@@ -20,6 +20,7 @@ export default function Waiting() {
           be redirected back to the site.
         </p>
         <p className="text-sm text-gray-400">If you don't receive the email, check spam or try signing up again.</p>
+        <p className="text-sm text-gray-400">Contact whendoesitgg@gmail.com for further assistance</p>
       </div>
       <button
         className="mt-6 text-blue-400 underline"
