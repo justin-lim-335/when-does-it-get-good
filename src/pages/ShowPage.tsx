@@ -318,7 +318,7 @@ export default function ShowPage() {
     }
   };
 
-  const averageEpisode = average ? findEpisodeByAbsolute(average) : null;
+  const averageEpisode = average != null ? findEpisodeByAbsolute(Math.round(average)) : null;
   const hasVotes = !!averageEpisode;
   const userEpisode = userVote ? findEpisodeByAbsolute(userVote) : null;
 
@@ -423,7 +423,7 @@ export default function ShowPage() {
                   }`}
                   style={{
                     left: `${
-                      hasVotes && averageEpisode
+                      hasVotes && averageEpisode && episodes.length > 1
                         ? ((averageEpisode.absolute_number - 1) / (episodes.length - 1)) * 100
                         : 50
                     }%`,
