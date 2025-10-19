@@ -377,7 +377,7 @@ export default function ShowPage() {
         )}
 
         {/* Voting section */}
-        <div className="bg-gray-600 rounded-2xl shadow-md p-6 flex flex-col gap-3">
+        <div className="bg-gray-600 rounded-2xl shadow-md p-6 flex flex-col gap-3 relative">
           {!userVote || isChangingVote ? (
             <>
               <h2 className="text-2xl font-semibold text-gray-200">Submit Your Vote</h2>
@@ -438,7 +438,7 @@ export default function ShowPage() {
           )}
 
           {/* Average indicator */}
-          <div className="mt-6 border-t pt-4 text-center relative">
+          <div className="mt-6 border-t pt-4 text-center flex flex-col items-center relative">
             <h3 className="text-xl font-semibold text-gray-200 mb-3">
               When Does <span className="italic text-blue-400">{show?.title}</span> Get Good?
             </h3>
@@ -456,6 +456,7 @@ export default function ShowPage() {
                           ? ((averageEpisode.absolute_number - 1) / (episodes.length - 1)) * 100
                           : 50
                       }%`,
+                      position: "relative", 
                       transform: "translate(-50%, -50%)",
                       transition: "left 0.5s ease-in-out", // ✨ Add this line
                     }}
