@@ -60,15 +60,18 @@ export default function ShowPage() {
 
   // Fetch show + episodes
   useEffect(() => {
-    if (!tmdb_id || !user) return;
-    if (episodes.length === 0) return;
+    if (!tmdb_id) return;
 
     const fetchShowAndEpisodes = async () => {
       setLoading(true);
+      setErrorMessage(null);
+
       try {
+        // 1️⃣ Fetch show info
         const res = await fetch(
           `https://api.themoviedb.org/3/tv/${tmdb_id}?api_key=${TMDB_API_KEY}`
         );
+        if (!res.ok) throw new Error(`Show fetch failed: ${res.status}`);
         const data = await res.json();
 
         const genreNames = data.genres?.map((g: any) => g.name).join(", ") || "N/A";
@@ -79,11 +82,14 @@ export default function ShowPage() {
           genre: genreNames,
         });
 
+        // 2️⃣ Fetch all episodes
         const allEpisodes: Episode[] = [];
         let counter = 1;
         for (let s = 1; s <= (data.number_of_seasons || 1); s++) {
           try {
-            const seasonRes = await fetch(`https://api.themoviedb.org/3/tv/${tmdb_id}/season/${s}?api_key=${TMDB_API_KEY}`);
+            const seasonRes = await fetch(
+              `https://api.themoviedb.org/3/tv/${tmdb_id}/season/${s}?api_key=${TMDB_API_KEY}`
+            );
             if (!seasonRes.ok) throw new Error(`Season ${s} fetch failed`);
             const seasonData = await seasonRes.json();
             (seasonData.episodes || []).forEach((ep: any) => {
@@ -99,10 +105,9 @@ export default function ShowPage() {
             console.error(`Error loading season ${s}:`, err);
           }
         }
-        console.log("Fetching show data for tmdb_id:", tmdb_id);
-
 
         setEpisodes(allEpisodes);
+        console.log("Fetched show and episodes for tmdb_id:", tmdb_id);
       } catch (err) {
         console.error("Failed to fetch show info:", err);
         setErrorMessage("Could not load show details.");
@@ -113,6 +118,7 @@ export default function ShowPage() {
 
     fetchShowAndEpisodes();
   }, [tmdb_id]);
+
 
   // Fetch average numeric absolute_number
   const fetchAverage = async () => {
