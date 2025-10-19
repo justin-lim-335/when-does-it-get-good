@@ -2,7 +2,7 @@
   "name": "when-does-it-get-good",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "dev:frontend": "vite",
     "dev:backend": "tsx watch server/index.ts",
