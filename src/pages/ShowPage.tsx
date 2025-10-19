@@ -115,32 +115,73 @@ export default function ShowPage() {
   // Fetch average
   const fetchAverage = async () => {
     if (!tmdb_id) return;
+
+    const numericTmdbId = Number(tmdb_id);
+    console.log("Fetching average vote for show:", numericTmdbId);
+
     try {
-      const res = await fetch(`${API_BASE}/shows/${tmdb_id}/average`);
-      if (res.ok) {
-        const data = await res.json();
-        setAverage(data?.average ?? null);
+      const res = await fetch(`${API_BASE}/shows/${numericTmdbId}/average`);
+      if (!res.ok) {
+        console.error("Average vote fetch failed:", res.status, res.statusText);
+        setAverage(null);
+        return;
+      }
+
+      const data = await res.json();
+      console.log("Average vote response:", data);
+
+      // Ensure the value is numeric
+      const avg = data?.average != null ? Number(data.average) : null;
+      if (avg != null && !isNaN(avg)) {
+        setAverage(avg);
+      } else {
+        setAverage(null);
       }
     } catch (err) {
-      console.error("Failed to fetch average:", err);
+      console.error("Failed to fetch average vote:", err);
+      setAverage(null);
     }
   };
 
   // Fetch user's vote
   const fetchUserVote = async () => {
     if (!user || !tmdb_id) return;
+
+    const numericTmdbId = Number(tmdb_id);
+    console.log(`Fetching vote for user ${user.id} on show ${numericTmdbId}`);
+
     try {
-      const res = await fetch(`${API_BASE}/votes/${user.id}/${tmdb_id}`);
-      if (!res.ok) return;
+      const res = await fetch(`${API_BASE}/votes/${user.id}/${numericTmdbId}`);
+      if (!res.ok) {
+        console.warn("User vote fetch failed:", res.status, res.statusText);
+        setUserVote(null);
+        setSelectedEpisode("");
+        return;
+      }
 
       const data = await res.json();
-      if (data?.absolute_number) {
-        setUserVote(Number(data.absolute_number));
-        setSelectedEpisode(Number(data.absolute_number));
-        setIsChangingVote(false);
+      console.log("User vote response:", data);
+
+      if (data?.absolute_number != null) {
+        const voteNum = Number(data.absolute_number);
+        if (!isNaN(voteNum)) {
+          setUserVote(voteNum);
+          setSelectedEpisode(voteNum);
+          setIsChangingVote(false);
+        } else {
+          console.warn("User vote absolute_number is not numeric:", data.absolute_number);
+          setUserVote(null);
+          setSelectedEpisode("");
+        }
+      } else {
+        console.log("User has not voted yet.");
+        setUserVote(null);
+        setSelectedEpisode("");
       }
     } catch (err) {
       console.error("Failed to fetch user vote:", err);
+      setUserVote(null);
+      setSelectedEpisode("");
     }
   };
 
