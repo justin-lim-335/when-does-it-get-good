@@ -42,6 +42,8 @@ router.post("/submit-vote", async (req, res) => {
       .upsert([{ tmdb_id: tmdbIdNum, title, poster_path, first_air_date }], { onConflict: "tmdb_id" });
 
     // Upsert vote
+    console.log("Vote payload:", { user_id, show_tmdb_id, season, episode, episode_title, absolute_number });
+
     const { data, error } = await supabaseAdmin
       .from("votes")
       .upsert(

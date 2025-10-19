@@ -1,55 +1,84 @@
-import fetch from "node-fetch"; // if using Node.js <18, otherwise fetch is global
+// src/testApi.js
+import fetch from "node-fetch";
 
-const API_BASE = "https://getgood-api.onrender.com"; // change if needed
-const TEST_USER_ID = "8373f35a-f58d-46f2-8092-d35c30a43331"; // replace with a real user ID
-const TEST_SHOW_ID = 40075; // replace with a real TMDB show ID
+const API_BASE = process.env.API_BASE || "http://localhost:3001";
 
-async function testApi() {
+// ✅ Replace these with a real user_id and show_tmdb_id that exist in your DB
+const TEST_USER_ID = "8373f35a-f58d-46f2-8092-d35c30a43331";
+const TEST_SHOW_ID = 40075;
+
+async function test() {
+  // Helper to log section
+  const log = (label, ...args) => console.log(`\n=== ${label} ===`, ...args);
+
+  // 1️⃣ GET user vote
   try {
-    console.log("1️⃣ Testing GET vote...");
-    let res = await fetch(`${API_BASE}/votes/${TEST_USER_ID}/${TEST_SHOW_ID}`);
-    console.log("GET status:", res.status);
-    const getData = await res.text();
-    console.log("GET response:", getData);
+    const res = await fetch(`${API_BASE}/votes/${TEST_USER_ID}/${TEST_SHOW_ID}`);
+    const data = await res.json();
+    log("GET vote", "status:", res.status, "response:", data);
+  } catch (err) {
+    log("GET vote error", err);
+  }
 
-    console.log("\n2️⃣ Testing POST submit-vote...");
-    res = await fetch(`${API_BASE}/submit-vote`, {
+  // 2️⃣ POST submit-vote
+  const postPayload = {
+    user_id: TEST_USER_ID,
+    show_tmdb_id: TEST_SHOW_ID,
+    season: 1,
+    episode: 1,
+    episode_title: "Pilot",
+    absolute_number: 1,
+  };
+
+  try {
+    console.log("POST payload:", postPayload);
+
+    const res = await fetch(`${API_BASE}/submit-vote`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: TEST_USER_ID,
-        show_tmdb_id: TEST_SHOW_ID,
-        season_number: 1,
-        episode_number: 1,
-        absolute_number: 1,
-      }),
+      body: JSON.stringify(postPayload),
     });
-    console.log("POST status:", res.status);
-    const postData = await res.text();
-    console.log("POST response:", postData);
+    const data = await res.json();
+    log("POST submit-vote", "status:", res.status, "response:", data);
+  } catch (err) {
+    log("POST submit-vote error", err);
+  }
 
-    console.log("\n3️⃣ Testing PATCH update-vote...");
-    res = await fetch(`${API_BASE}/update-vote/${TEST_USER_ID}/${TEST_SHOW_ID}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ absolute_number: 2 }),
-    });
-    console.log("PATCH status:", res.status);
-    const patchData = await res.text();
-    console.log("PATCH response:", patchData);
+  // 3️⃣ PATCH update-vote
+  const patchPayload = {
+    season: 1,
+    episode: 2,
+    episode_title: "Second Episode",
+    absolute_number: 2,
+  };
 
-    console.log("\n4️⃣ Testing DELETE vote...");
-    res = await fetch(`${API_BASE}/delete-vote/${TEST_USER_ID}/${TEST_SHOW_ID}`, {
+  try {
+    console.log("PATCH payload:", patchPayload);
+
+    const res = await fetch(
+      `${API_BASE}/update-vote/${TEST_USER_ID}/${TEST_SHOW_ID}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patchPayload),
+      }
+    );
+    const data = await res.json();
+    log("PATCH update-vote", "status:", res.status, "response:", data);
+  } catch (err) {
+    log("PATCH update-vote error", err);
+  }
+
+  // 4️⃣ DELETE vote
+  try {
+    const res = await fetch(`${API_BASE}/delete-vote/${TEST_USER_ID}/${TEST_SHOW_ID}`, {
       method: "DELETE",
     });
-    console.log("DELETE status:", res.status);
-    const deleteData = await res.text();
-    console.log("DELETE response:", deleteData);
-
-    console.log("\n✅ Test complete!");
+    const data = await res.json();
+    log("DELETE vote", "status:", res.status, "response:", data);
   } catch (err) {
-    console.error("Test script error:", err);
+    log("DELETE vote error", err);
   }
 }
 
-testApi();
+test();
