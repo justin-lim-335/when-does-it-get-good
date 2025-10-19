@@ -60,7 +60,8 @@ export default function ShowPage() {
 
   // Fetch show + episodes
   useEffect(() => {
-    if (!tmdb_id) return;
+    if (!tmdb_id || !user) return;
+    if (episodes.length === 0) return;
 
     const fetchShowAndEpisodes = async () => {
       setLoading(true);
@@ -112,7 +113,7 @@ export default function ShowPage() {
     fetchShowAndEpisodes();
   }, [tmdb_id]);
 
-  // Fetch average
+  // Fetch average numeric absolute_number
   const fetchAverage = async () => {
     if (!tmdb_id) return;
 
@@ -130,10 +131,9 @@ export default function ShowPage() {
       const data = await res.json();
       console.log("Average vote response:", data);
 
-      // Ensure the value is numeric
-      const avg = data?.average != null ? Number(data.average) : null;
-      if (avg != null && !isNaN(avg)) {
-        setAverage(avg);
+      // data.average is already numeric (or null)
+      if (data?.average != null && !isNaN(data.average)) {
+        setAverage(Number(data.average));
       } else {
         setAverage(null);
       }
@@ -142,6 +142,7 @@ export default function ShowPage() {
       setAverage(null);
     }
   };
+
 
   // Fetch user's vote
   const fetchUserVote = async () => {
@@ -185,15 +186,11 @@ export default function ShowPage() {
     }
   };
 
-  // Setup real-time subscription
-  // --- inside ShowPage component ---
-
+  // Setup realtime subscription for votes
   useEffect(() => {
-    if (!tmdb_id) return;
-    if (!user) return;
+    if (!tmdb_id || !user) return;
 
     const numericTmdbId = Number(tmdb_id);
-
     console.log("Setting up vote fetch and subscription for show:", numericTmdbId, "user:", user.id);
 
     // Fetch initial data
@@ -206,30 +203,35 @@ export default function ShowPage() {
 
     fetchData();
 
-    // Setup Supabase Realtime subscription
+    // Setup Supabase Realtime subscription for votes on this show
     const channel = supabase
       .channel(`votes-${numericTmdbId}`)
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "*", // listen to INSERT, UPDATE, DELETE
           schema: "public",
           table: "votes",
           filter: `show_tmdb_id=eq.${numericTmdbId}`,
         },
         (payload) => {
           console.log("Realtime vote update received:", payload);
-          fetchAverage(); // update average when a vote changes
+
+          // Only update average; userVote will be fetched on next render if needed
+          if (payload.eventType === "INSERT" || payload.eventType === "UPDATE" || payload.eventType === "DELETE") {
+            fetchAverage();
+          }
         }
       )
       .subscribe((status) => console.log("Channel subscription status:", status));
 
-    // Cleanup subscription on unmount / tmdb_id change
+    // Cleanup subscription on unmount or tmdb_id/user change
     return () => {
       console.log("Removing subscription for show:", numericTmdbId);
       supabase.removeChannel(channel);
     };
   }, [tmdb_id, user]);
+
 
 
   // Handle vote submission
@@ -318,9 +320,16 @@ export default function ShowPage() {
     }
   };
 
-  const averageEpisode = average != null ? findEpisodeByAbsolute(Math.round(average)) : null;
+  const averageEpisode = 
+    average != null && episodes.length > 0 
+    ? findEpisodeByAbsolute(Math.round(average)) 
+    : null;
   const hasVotes = !!averageEpisode;
   const userEpisode = userVote ? findEpisodeByAbsolute(userVote) : null;
+  const averagePercent =
+  hasVotes && averageEpisode && episodes.length > 1
+    ? ((averageEpisode.absolute_number - 1) / (episodes.length - 1)) * 100
+    : 50;
 
   return (
     <div className="min-h-screen bg-gray-800">
@@ -417,25 +426,31 @@ export default function ShowPage() {
               <div className="w-3/4 h-[4px] bg-black relative">
                 <div className="absolute -left-2 top-1/2 w-4 h-4 bg-black rounded-full -translate-y-1/2" />
                 <div className="absolute -right-2 top-1/2 w-4 h-4 bg-black rounded-full -translate-y-1/2" />
-                <div
-                  className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-white shadow-md ${
-                    hasVotes ? "bg-blue-500" : "bg-red-500"
-                  }`}
-                  style={{
-                    left: `${
-                      hasVotes && averageEpisode && episodes.length > 1
-                        ? ((averageEpisode.absolute_number - 1) / (episodes.length - 1)) * 100
-                        : 50
-                    }%`,
-                    transform: "translate(-50%, -50%)",
-                  }}
-                />
+                  <div
+                    className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-white shadow-md ${
+                      hasVotes ? "bg-blue-500" : "bg-red-500"
+                    }`}
+                    style={{
+                      left: `${
+                        hasVotes && averageEpisode && episodes.length > 1
+                          ? ((averageEpisode.absolute_number - 1) / (episodes.length - 1)) * 100
+                          : 50
+                      }%`,
+                      transform: "translate(-50%, -50%)",
+                      transition: "left 0.5s ease-in-out", // ✨ Add this line
+                    }}
+                  />
               </div>
 
               <div
-                className={`absolute top-full mt-3 left-1/2 -translate-x-1/2 px-4 py-3 rounded-lg shadow text-center max-w-xs flex flex-col items-center ${
+                className={`absolute top-full mt-3 px-4 py-3 rounded-lg shadow text-center max-w-xs flex flex-col items-center ${
                   hasVotes ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-600"
                 }`}
+                style={{
+                  left: `${averagePercent}%`,
+                  transform: "translateX(-50%)",
+                  transition: "left 0.5s ease-in-out", // Animate along with the dot
+                }}
               >
                 {hasVotes ? (
                   <>

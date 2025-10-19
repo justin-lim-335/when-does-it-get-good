@@ -14,6 +14,7 @@ import submitVoteRouter from "./routes/submit-vote";
 import updateVoteRouter from "./routes/update-vote";
 import deleteVoteRouter from "./routes/delete-vote";
 import getVotesRouter from "./routes/get-vote";
+import getAverageRoute from "./routes/get-average";
 
 // ------------------- Setup -------------------
 dotenv.config();
@@ -229,77 +230,8 @@ app.post("/shows", async (req, res) => {
   res.json(data);
 });
 
-// GET average “gets good” episode for a show
-app.get("/shows/:tmdb_id/average", async (req, res) => {
-  const { tmdb_id } = req.params;
-
-  try {
-    const tmdbIdNum = Number(tmdb_id);
-
-    // 1️⃣ Fetch all votes for this show
-    const { data: votes, error: votesError } = await supabase
-      .from("votes")
-      .select("absolute_number")
-      .eq("show_tmdb_id", tmdbIdNum);
-
-    if (votesError) throw votesError;
-
-    if (!votes || votes.length === 0) {
-      return res.json({ average: null });
-    }
-
-    // 2️⃣ Compute average absolute_number
-    const avgAbsolute =
-      votes.reduce((sum: number, v: any) => sum + Number(v.absolute_number), 0) / votes.length;
-
-    // 3️⃣ Fetch show details from TMDb to get episodes
-    const showRes = await fetch(
-      `https://api.themoviedb.org/3/tv/${tmdbIdNum}?api_key=${TMDB_API_KEY}`
-    );
-    const showData = await showRes.json();
-
-    let allEpisodes: {
-      season_number: number;
-      episode_number: number;
-      name: string;
-      absolute_number: number;
-    }[] = [];
-    let absoluteCounter = 1;
-
-    for (let season = 1; season <= (showData.number_of_seasons || 1); season++) {
-      const seasonRes = await fetch(
-        `https://api.themoviedb.org/3/tv/${tmdbIdNum}/season/${season}?api_key=${TMDB_API_KEY}`
-      );
-      const seasonData = await seasonRes.json();
-
-      (seasonData.episodes || []).forEach((ep: any) => {
-        allEpisodes.push({
-          season_number: season,
-          episode_number: ep.episode_number,
-          absolute_number: absoluteCounter++,
-          name: ep.name,
-        });
-      });
-    }
-
-    // 4️⃣ Find the episode closest to the average absolute_number
-    const avgEpisode = allEpisodes.reduce((prev, curr) =>
-      Math.abs(curr.absolute_number - avgAbsolute) < Math.abs(prev.absolute_number - avgAbsolute)
-        ? curr
-        : prev
-    );
-
-    // 5️⃣ Return in desired format: S#E# - title
-    const avgDisplay = avgEpisode
-      ? `S${avgEpisode.season_number}E${avgEpisode.episode_number} - ${avgEpisode.name}`
-      : null;
-
-    res.json({ average: avgDisplay });
-  } catch (err: any) {
-    console.error("Average calculation error:", err);
-    res.status(500).json({ error: err.message || "Internal server error" });
-  }
-});
+// Use the new average route
+app.use("/shows", getAverageRoute);
 
 // ✅ Delete user route
 app.post("/api/delete-user", async (req, res) => {
