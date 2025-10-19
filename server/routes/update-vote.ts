@@ -1,4 +1,3 @@
-// server/routes/update-vote.ts
 import { Router } from "express";
 import { supabaseAdmin } from "../supabase";
 
@@ -7,6 +6,8 @@ const router = Router();
 router.patch("/update-vote/:user_id/:show_tmdb_id", async (req, res) => {
   const { user_id, show_tmdb_id } = req.params;
   const { season, episode, episode_title, absolute_number } = req.body;
+
+  if (!absolute_number) return res.status(400).json({ error: "Missing required absolute_number" });
 
   try {
     const { data, error } = await supabaseAdmin
@@ -29,7 +30,7 @@ router.patch("/update-vote/:user_id/:show_tmdb_id", async (req, res) => {
     return res.json({ success: true, data });
   } catch (err) {
     console.error("Update vote error:", err);
-    return res.status(500).json({ error: "Failed to update vote" });
+    return res.status(500).json({ error: err instanceof Error ? err.message : "Failed to update vote" });
   }
 });
 

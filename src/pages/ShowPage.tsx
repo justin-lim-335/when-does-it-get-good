@@ -41,7 +41,11 @@ export default function ShowPage() {
   const [voteSuccess, setVoteSuccess] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // 🧹 Reset when navigating between shows
+  // Helper: find episode by absolute number
+  const findEpisodeByAbsolute = (absolute: number) =>
+    episodes.find((ep) => ep.absolute_number === absolute);
+
+  // Reset state when navigating to a new show
   useEffect(() => {
     setShow(null);
     setEpisodes([]);
@@ -54,7 +58,7 @@ export default function ShowPage() {
     setLoading(true);
   }, [tmdb_id]);
 
-  // 🎬 Fetch show info + episodes
+  // Fetch show + episodes
   useEffect(() => {
     if (!tmdb_id) return;
 
@@ -66,9 +70,7 @@ export default function ShowPage() {
         );
         const data = await res.json();
 
-        const genreNames = data.genres
-          ? data.genres.map((g: any) => g.name).join(", ")
-          : "N/A";
+        const genreNames = data.genres?.map((g: any) => g.name).join(", ") || "N/A";
 
         setShow({
           ...data,
@@ -106,7 +108,7 @@ export default function ShowPage() {
     fetchShowAndEpisodes();
   }, [tmdb_id]);
 
-  // 📊 Fetch average for show
+  // Fetch average
   const fetchAverage = async () => {
     if (!tmdb_id) return;
     try {
@@ -120,27 +122,27 @@ export default function ShowPage() {
     }
   };
 
-  // 👤 Fetch user's existing vote
+  // Fetch user's vote
   const fetchUserVote = async () => {
     if (!user || !tmdb_id) return;
     try {
       const res = await fetch(`${API_BASE}/votes/${user.id}/${tmdb_id}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data?.absolute_number) {
-          setUserVote(Number(data.absolute_number));
-          setSelectedEpisode(Number(data.absolute_number));
-        }
+      if (!res.ok) return;
+
+      const data = await res.json();
+      if (data?.absolute_number) {
+        setUserVote(Number(data.absolute_number));
+        setSelectedEpisode(Number(data.absolute_number));
+        setIsChangingVote(false);
       }
     } catch (err) {
       console.error("Failed to fetch user vote:", err);
     }
   };
 
-  // 📡 Supabase subscription + initial load
+  // Setup real-time subscription
   useEffect(() => {
     if (!tmdb_id) return;
-
     fetchAverage();
     fetchUserVote();
 
@@ -153,82 +155,97 @@ export default function ShowPage() {
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => void supabase.removeChannel(channel);
   }, [tmdb_id, user]);
 
-  // 🧩 Submit new or updated vote
-  const submitVote = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !tmdb_id || !selectedEpisode) return;
+  // Handle vote submission
+  const handleVoteSubmit = async (e: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setErrorMessage(null);
 
-    const selectedEp = episodes.find(
-      (ep) => ep.absolute_number === Number(selectedEpisode)
-    );
-    if (!selectedEp) return;
+    if (!user) {
+      return setErrorMessage("You must be logged in to vote.");
+    }
+    if (selectedEpisode === "" || selectedEpisode === null) {
+      return setErrorMessage("Please select an episode to vote.");
+    }
+
+    const ep = findEpisodeByAbsolute(Number(selectedEpisode));
+    if (!ep) {
+      return setErrorMessage("Invalid episode selected.");
+    }
 
     const payload = {
-      user_id: user.id,
-      show_tmdb_id: Number(tmdb_id),
-      season: selectedEp.season_number,
-      episode: selectedEp.episode_number,
-      absolute_number: selectedEp.absolute_number,
-      episode_title: selectedEp.name,
+      season: ep.season_number,
+      episode: ep.episode_number,
+      episode_title: ep.name,
+      absolute_number: ep.absolute_number,
     };
 
     try {
-      const method = userVote ? "PATCH" : "POST";
       const endpoint = userVote
         ? `${API_BASE}/update-vote/${user.id}/${tmdb_id}`
         : `${API_BASE}/submit-vote`;
 
+      const method = userVote ? "PATCH" : "POST";
+      const body = userVote
+        ? JSON.stringify(payload)
+        : JSON.stringify({ user_id: user.id, show_tmdb_id: Number(tmdb_id), ...payload });
+
       const res = await fetch(endpoint, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body,
       });
 
-      if (!res.ok) throw new Error(`${method} failed: ${res.status}`);
+      const data = await res.json();
+      if (!res.ok) {
+        console.error("Vote submission failed:", data);
+        return setErrorMessage(data?.error || "Failed to submit vote.");
+      }
 
-      setVoteSuccess(
-        userVote ? "Your vote has been updated!" : "Your vote has been submitted!"
-      );
-      setUserVote(selectedEp.absolute_number);
+      //Update UI
+      setUserVote(ep.absolute_number);
+      setSelectedEpisode(ep.absolute_number);
       setIsChangingVote(false);
+      setVoteSuccess(userVote ? "Vote updated!" : "Vote submitted!");
       fetchAverage();
+      setTimeout(() => setVoteSuccess(null), 2500);
     } catch (err) {
-      console.error("Vote submission error:", err);
+      console.error("Error submitting vote:", err);
       setErrorMessage("Failed to submit vote.");
     }
-  };
 
-  // 🗑 Remove vote
+  // Remove vote
   const removeVote = async () => {
     if (!user || !tmdb_id) return;
+    if (!confirm("Are you sure you want to remove your vote?")) return;
+
     try {
-      const res = await fetch(
-        `${API_BASE}/delete-vote/${user.id}/${tmdb_id}`,
-        { method: "DELETE" }
-      );
-      if (!res.ok) throw new Error("Delete failed");
+      const res = await fetch(`${API_BASE}/delete-vote/${user.id}/${tmdb_id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        console.error("Remove vote failed:", data);
+        return setErrorMessage(data?.error || "Failed to remove vote.");
+      }
+
       setUserVote(null);
       setSelectedEpisode("");
+      setIsChangingVote(false);
       setVoteSuccess("Vote removed.");
       fetchAverage();
+      setTimeout(() => setVoteSuccess(null), 2000);
     } catch (err) {
-      console.error("Delete vote error:", err);
-      setErrorMessage("Failed to delete vote.");
+      console.error("Error removing vote:", err);
+      setErrorMessage("Failed to remove vote.");
     }
   };
 
-  const averageEpisode = average
-    ? episodes.find((ep) => ep.absolute_number === average)
-    : null;
-
+  const averageEpisode = average ? findEpisodeByAbsolute(average) : null;
   const hasVotes = !!averageEpisode;
-  const userEpisode =
-    userVote && episodes.find((ep) => ep.absolute_number === userVote);
+  const userEpisode = userVote ? findEpisodeByAbsolute(userVote) : null;
 
   return (
     <div className="min-h-screen bg-gray-800">
@@ -251,9 +268,7 @@ export default function ShowPage() {
                 <p><strong>Episodes:</strong> {show.number_of_episodes ?? "N/A"}</p>
               </div>
             </div>
-            <p className="text-gray-200 leading-relaxed mb-4">
-              {show.overview || "No description available."}
-            </p>
+            <p className="text-gray-200 leading-relaxed mb-4">{show.overview || "No description available."}</p>
           </div>
         )}
 
@@ -262,16 +277,12 @@ export default function ShowPage() {
           {!userVote || isChangingVote ? (
             <>
               <h2 className="text-2xl font-semibold text-gray-200">Submit Your Vote</h2>
-              <form onSubmit={submitVote} className="flex flex-col gap-3">
+              <form onSubmit={handleVoteSubmit} className="flex flex-col gap-3">
                 {episodes.length > 0 ? (
                   <select
                     className="border border-gray-300 rounded-md p-3 w-full text-gray-800 bg-white"
                     value={selectedEpisode}
-                    onChange={(e) =>
-                      setSelectedEpisode(
-                        e.target.value === "" ? "" : Number(e.target.value)
-                      )
-                    }
+                    onChange={(e) => setSelectedEpisode(e.target.value === "" ? "" : Number(e.target.value))}
                   >
                     <option value="">-- Choose an episode --</option>
                     {episodes.map((ep) => (
@@ -298,8 +309,7 @@ export default function ShowPage() {
               <h2 className="text-2xl font-semibold text-gray-200">Your Vote</h2>
               {userEpisode ? (
                 <p className="text-lg text-gray-200">
-                  S{userEpisode.season_number}E{userEpisode.episode_number} —{" "}
-                  {userEpisode.name}
+                  S{userEpisode.season_number}E{userEpisode.episode_number} — {userEpisode.name}
                 </p>
               ) : (
                 <p className="italic text-gray-200">Could not find your vote.</p>
@@ -326,8 +336,7 @@ export default function ShowPage() {
           {/* Average indicator */}
           <div className="mt-6 border-t pt-4 text-center relative">
             <h3 className="text-xl font-semibold text-gray-200 mb-3">
-              When Does{" "}
-              <span className="italic text-blue-400">{show?.title}</span> Get Good?
+              When Does <span className="italic text-blue-400">{show?.title}</span> Get Good?
             </h3>
             <div className="relative w-full flex items-center justify-center">
               <div className="w-3/4 h-[4px] bg-black relative">
@@ -340,9 +349,7 @@ export default function ShowPage() {
                   style={{
                     left: `${
                       hasVotes && averageEpisode
-                        ? ((averageEpisode.absolute_number - 1) /
-                            (episodes.length - 1)) *
-                          100
+                        ? ((averageEpisode.absolute_number - 1) / (episodes.length - 1)) * 100
                         : 50
                     }%`,
                     transform: "translate(-50%, -50%)",
@@ -352,9 +359,7 @@ export default function ShowPage() {
 
               <div
                 className={`absolute top-full mt-3 left-1/2 -translate-x-1/2 px-4 py-3 rounded-lg shadow text-center max-w-xs flex flex-col items-center ${
-                  hasVotes
-                    ? "bg-blue-100 text-blue-700"
-                    : "bg-red-100 text-red-600"
+                  hasVotes ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-600"
                 }`}
               >
                 {hasVotes ? (
@@ -384,4 +389,5 @@ export default function ShowPage() {
       </div>
     </div>
   );
+}
 }
