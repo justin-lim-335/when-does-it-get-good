@@ -330,6 +330,8 @@ export default function ShowPage() {
   hasVotes && averageEpisode && episodes.length > 1
     ? ((averageEpisode.absolute_number - 1) / (episodes.length - 1)) * 100
     : 50;
+    
+  console.log("Rendering show:", show, "loading:", loading);
 
   return (
     <div className="min-h-screen bg-gray-800">
