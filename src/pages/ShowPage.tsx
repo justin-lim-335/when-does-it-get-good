@@ -99,6 +99,7 @@ export default function ShowPage() {
             console.error(`Error loading season ${s}:`, err);
           }
         }
+        console.log("Fetching show data for tmdb_id:", tmdb_id);
 
 
         setEpisodes(allEpisodes);
@@ -330,7 +331,8 @@ export default function ShowPage() {
   hasVotes && averageEpisode && episodes.length > 1
     ? ((averageEpisode.absolute_number - 1) / (episodes.length - 1)) * 100
     : 50;
-    
+  
+  console.log("tmdb_id:", tmdb_id);
   console.log("Rendering show:", show, "loading:", loading);
 
   return (
