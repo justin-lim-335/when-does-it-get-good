@@ -208,7 +208,7 @@ export default function VotingHistory() {
                       key={vote.id}
                       className="border-b border-gray-700 hover:bg-gray-700/40 transition"
                     >
-                      <td className="p-2 flex items-center gap-3 min-w-[180px]">
+                      <td className="p-2 flex items-center gap-3 min-w-[180px] align-middle">
                         {show.poster_path && (
                           <a
                             href={`/shows/${show.tmdb_id}`}
