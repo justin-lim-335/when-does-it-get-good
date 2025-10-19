@@ -37,9 +37,12 @@ export default function SignUp() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`, // user redirected on confirmation
+          emailRedirectTo: `https://www.whendoesitgetgood.net/`, // user redirected on confirmation
         },
       });
+      if (error) throw error;
+      console.log("Supabase sign-up data:", data);
+      
 
       if (authError) throw authError;
       if (!data.user) throw new Error("Sign-up failed. Try again later.");
