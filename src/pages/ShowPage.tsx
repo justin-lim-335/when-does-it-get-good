@@ -145,22 +145,51 @@ export default function ShowPage() {
   };
 
   // Setup real-time subscription
+  // --- inside ShowPage component ---
+
   useEffect(() => {
     if (!tmdb_id) return;
-    fetchAverage();
-    fetchUserVote();
+    if (!user) return;
 
+    const numericTmdbId = Number(tmdb_id);
+
+    console.log("Setting up vote fetch and subscription for show:", numericTmdbId, "user:", user.id);
+
+    // Fetch initial data
+    const fetchData = async () => {
+      console.log("Fetching average vote...");
+      await fetchAverage();
+      console.log("Fetching user vote...");
+      await fetchUserVote();
+    };
+
+    fetchData();
+
+    // Setup Supabase Realtime subscription
     const channel = supabase
-      .channel(`votes-${tmdb_id}`)
+      .channel(`votes-${numericTmdbId}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "votes", filter: `show_tmdb_id=eq.${tmdb_id}` },
-        () => fetchAverage()
+        {
+          event: "*",
+          schema: "public",
+          table: "votes",
+          filter: `show_tmdb_id=eq.${numericTmdbId}`,
+        },
+        (payload) => {
+          console.log("Realtime vote update received:", payload);
+          fetchAverage(); // update average when a vote changes
+        }
       )
-      .subscribe();
+      .subscribe((status) => console.log("Channel subscription status:", status));
 
-    return () => void supabase.removeChannel(channel);
+    // Cleanup subscription on unmount / tmdb_id change
+    return () => {
+      console.log("Removing subscription for show:", numericTmdbId);
+      supabase.removeChannel(channel);
+    };
   }, [tmdb_id, user]);
+
 
   // Handle vote submission
   const handleVoteSubmit = async (e: React.FormEvent) => {
