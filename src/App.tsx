@@ -12,11 +12,13 @@ import Terms from "./pages/TermsOfUse";
 import History from "./pages/VotingHistory";
 import Waiting from "./pages/Waiting";
 import Footer from "./components/Footer";
+import ScrollToTop from "./components/ScrollToTop";
 
 function App() {
   return (
     <Router>
       <div className="app-container">
+        <ScrollToTop />
         {/* Shared Header */}
         <Header />
         <main>
