@@ -377,7 +377,7 @@ export default function ShowPage() {
         )}
 
         {/* Voting section */}
-        <div className="bg-gray-600 rounded-2xl shadow-md p-6 flex flex-col gap-3 relative pb-40 md:pb-6">
+        <div className="bg-gray-600 rounded-2xl shadow-md p-6 flex flex-col gap-3 relative pb-60 md:pb-6">
           {!userVote || isChangingVote ? (
             <>
               <h2 className="text-2xl font-semibold text-gray-200">Submit Your Vote</h2>
