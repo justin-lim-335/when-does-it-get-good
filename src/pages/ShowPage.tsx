@@ -107,7 +107,6 @@ export default function ShowPage() {
         }
 
         setEpisodes(allEpisodes);
-        console.log("Fetched show and episodes for tmdb_id:", tmdb_id);
       } catch (err) {
         console.error("Failed to fetch show info:", err);
         setErrorMessage("Could not load show details.");
@@ -149,6 +148,17 @@ export default function ShowPage() {
       setAverage(null);
     }
   };
+
+  useEffect(() => {
+  if (!tmdb_id) return;
+
+  const fetchAverageVote = async () => {
+    await fetchAverage(); // your existing function
+  };
+
+  fetchAverageVote();
+}, [tmdb_id]);
+
 
 
   // Fetch user's vote
@@ -456,11 +466,6 @@ export default function ShowPage() {
                 className={`absolute top-full mt-3 px-4 py-3 rounded-lg shadow text-center max-w-xs flex flex-col items-center ${
                   hasVotes ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-600"
                 }`}
-                style={{
-                  left: `${averagePercent}%`,
-                  transform: "translateX(-50%)",
-                  transition: "left 0.5s ease-in-out", // Animate along with the dot
-                }}
               >
                 {hasVotes ? (
                   <>
