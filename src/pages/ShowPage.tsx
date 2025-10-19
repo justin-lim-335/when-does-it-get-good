@@ -81,20 +81,24 @@ export default function ShowPage() {
         const allEpisodes: Episode[] = [];
         let counter = 1;
         for (let s = 1; s <= (data.number_of_seasons || 1); s++) {
-          const seasonRes = await fetch(
-            `https://api.themoviedb.org/3/tv/${tmdb_id}/season/${s}?api_key=${TMDB_API_KEY}`
-          );
-          const seasonData = await seasonRes.json();
-          (seasonData.episodes || []).forEach((ep: any) =>
-            allEpisodes.push({
-              season_number: s,
-              episode_number: ep.episode_number,
-              absolute_number: counter++,
-              name: ep.name,
-              still_path: ep.still_path,
-            })
-          );
+          try {
+            const seasonRes = await fetch(`https://api.themoviedb.org/3/tv/${tmdb_id}/season/${s}?api_key=${TMDB_API_KEY}`);
+            if (!seasonRes.ok) throw new Error(`Season ${s} fetch failed`);
+            const seasonData = await seasonRes.json();
+            (seasonData.episodes || []).forEach((ep: any) => {
+              allEpisodes.push({
+                season_number: s,
+                episode_number: ep.episode_number,
+                absolute_number: counter++,
+                name: ep.name,
+                still_path: ep.still_path,
+              });
+            });
+          } catch (err) {
+            console.error(`Error loading season ${s}:`, err);
+          }
         }
+
 
         setEpisodes(allEpisodes);
       } catch (err) {
@@ -215,6 +219,7 @@ export default function ShowPage() {
       console.error("Error submitting vote:", err);
       setErrorMessage("Failed to submit vote.");
     }
+  };
 
   // Remove vote
   const removeVote = async () => {
@@ -390,4 +395,4 @@ export default function ShowPage() {
     </div>
   );
 }
-}
+
