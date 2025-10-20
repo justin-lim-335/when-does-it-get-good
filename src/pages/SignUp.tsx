@@ -21,6 +21,7 @@ export default function SignUp() {
   const isValidPassword = (pwd: string) => pwd.length >= 8 && !/\s/.test(pwd);
   const isPasswordMatch = password === confirmPassword;
 
+  // src/pages/SignUp.tsx
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -32,56 +33,51 @@ export default function SignUp() {
 
     setLoading(true);
     try {
-      // Sign up via Supabase Auth
-      const { data, error: authError } = await supabase.auth.signUp({
+      // 1️⃣ Sign up via Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          emailRedirectTo: `https://www.whendoesitgetgood.net/`, // user redirected on confirmation
-        },
+        options: { emailRedirectTo: `https://www.whendoesitgetgood.net/` },
       });
+
       if (authError) {
-        // This includes duplicate email errors
-        console.error("Supabase sign-up error:", authError);
-        setError(authError.message);
-        return; // stop execution
+        setError(authError.message); // usually "User already registered"
+        return; // stop further execution
       }
 
-      if (!data?.user) {
+      if (!authData?.user) {
         setError("Sign-up failed. Try again later.");
         return;
       }
-      // Optional: create minimal user profile in backend
-      try {
-        const res = await fetch(`${BACKEND_BASE}/signup-user`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }), // send only email for now
-        });
 
-        let backendData;
-        try {
-          backendData = await res.json();
-        } catch {
-          const text = await res.text();
-          console.error("Non-JSON backend response:", text);
-          throw new Error("Backend returned unexpected response.");
+      // 2️⃣ Create minimal profile in backend
+      const res = await fetch(`${BACKEND_BASE}/signup-user`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const backendData = await res.json();
+
+      if (!res.ok) {
+        if (res.status === 409) {
+          // User already exists
+          setError("This email is already registered. Try logging in instead.");
+          return; // stop navigation
         }
-
-        if (!res.ok) throw new Error(backendData.error || "Failed to create user profile.");
-      } catch (backendErr: any) {
-        console.error("Backend signup error:", backendErr);
-        // we can optionally proceed if backend fails, user can still confirm email
+        throw new Error(backendData.error || "Failed to create user profile");
       }
 
-      navigate("/waiting"); // page after signup
+      // 3️⃣ Navigate only if signup was successful
+      navigate("/waiting");
     } catch (err: any) {
-      console.error(err);
+      console.error("Signup error:", err);
       setError(err.message || "Sign-up failed. Please try again.");
     } finally {
       setLoading(false);
     }
   };
+
 
   const getValidationColor = (value: string, isValid: boolean) => {
     if (!value) return "text-gray-400";

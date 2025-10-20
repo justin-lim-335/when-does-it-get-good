@@ -5,14 +5,14 @@ import { supabaseAdmin } from "../supabase";
 const router = Router();
 
 router.post("/", async (req, res) => {
-  const { email } = req.body; // only email is sent from frontend
+  const { email } = req.body;
 
   if (!email) {
     return res.status(400).json({ error: "Email is required" });
   }
 
   try {
-    // Check if user already exists (by email)
+    // Check if user already exists
     const { data: existing, error: selectError } = await supabaseAdmin
       .from("users")
       .select("id")
@@ -25,7 +25,7 @@ router.post("/", async (req, res) => {
     }
 
     if (existing) {
-      return res.status(409).json({ message: "User with this email already exists" });
+      return res.status(409).json({ error: "User already exists" }); // 409 for conflict
     }
 
     // Insert minimal profile
