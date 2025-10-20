@@ -40,13 +40,17 @@ export default function SignUp() {
           emailRedirectTo: `https://www.whendoesitgetgood.net/`, // user redirected on confirmation
         },
       });
-      if (error) throw error;
-      console.log("Supabase sign-up data:", data);
-      
+      if (authError) {
+        // This includes duplicate email errors
+        console.error("Supabase sign-up error:", authError);
+        setError(authError.message);
+        return; // stop execution
+      }
 
-      if (authError) throw authError;
-      if (!data.user) throw new Error("Sign-up failed. Try again later.");
-
+      if (!data?.user) {
+        setError("Sign-up failed. Try again later.");
+        return;
+      }
       // Optional: create minimal user profile in backend
       try {
         const res = await fetch(`${BACKEND_BASE}/signup-user`, {

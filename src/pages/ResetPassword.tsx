@@ -12,27 +12,25 @@ export default function ResetPassword() {
   const [isValidSession, setIsValidSession] = useState(false);
 
   useEffect(() => {
-    // When user lands from the email link, Supabase adds a fragment like #access_token=
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const accessToken = hashParams.get("access_token");
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("access_token");
+    const type = params.get("type");
 
-    if (accessToken) {
-      // Set the session so the user can update their password
-      supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: hashParams.get("refresh_token") || "",
-      }).then(({ error }) => {
-        if (error) {
-          console.error("Session error:", error);
-          setError("Invalid or expired password reset link.");
-        } else {
-          setIsValidSession(true);
-        }
-      });
+    if (token && type === "recovery") {
+      supabase.auth.exchangeCodeForSession(token)
+        .then(({ data, error }) => {
+          if (error) {
+            console.error("Session exchange error:", error);
+            setError("Invalid or expired password reset link.");
+          } else {
+            setIsValidSession(true);
+          }
+        });
     } else {
       setError("Missing or invalid reset link.");
     }
   }, []);
+
 
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,12 +50,12 @@ export default function ResetPassword() {
       setError(error.message);
     } else {
       setMessage("Password successfully reset! Redirecting to login...");
-      setTimeout(() => navigate("/login"), 2000);
+      setTimeout(() => navigate("/"), 2000);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 px-4">
+    <div className="min-h-screen flex items-center justify-start bg-gray-900 px-4">
       <div className="bg-gray-800 p-8 rounded-2xl shadow-lg w-full max-w-md">
         <h2 className="text-2xl font-bold text-center text-white mb-6">
           Reset Your Password

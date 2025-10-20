@@ -83,12 +83,13 @@ export default function LoginPage() {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `https://whendoesitgetgood.net/reset-password`,
       });
 
       if (error) throw error;
 
       setResetMessage("Check your email for the password reset link!");
+      setTimeout(() => navigate("/"), 2000);
     } catch (err: any) {
       setResetMessage(err.message || "Failed to send password reset email.");
     }

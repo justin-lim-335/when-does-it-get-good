@@ -25,7 +25,7 @@ router.post("/", async (req, res) => {
     }
 
     if (existing) {
-      return res.status(200).json({ message: "User already exists" });
+      return res.status(409).json({ message: "User with this email already exists" });
     }
 
     // Insert minimal profile
