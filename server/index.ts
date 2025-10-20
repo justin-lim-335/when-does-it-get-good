@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
+import rateLimit from "express-rate-limit";
 import signupUserRouter from "./routes/signup-user"
 import searchRoutes from "./routes/search";
 import { createClient } from "@supabase/supabase-js";
@@ -17,6 +18,7 @@ import getVotesRouter from "./routes/get-vote";
 import getAverageRoute from "./routes/get-average";
 import votesCountRouter from "./routes/total-votes";
 import authRoutes from "./routes/auth";
+import publicShowsRouter from "./routes/public-shows";
 
 // ------------------- Setup -------------------
 dotenv.config();
@@ -67,6 +69,42 @@ if (!TMDB_API_KEY) {
 
 // ------------------- Initialize Supabase -------------------
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+// ------------------- Middleware -------------------
+
+// --- Public CORS: allow all origins for GET endpoints ---
+const publicCors = cors({
+  origin: "*",        // allow all domains
+  methods: ["GET"],   // read-only
+});
+
+// --- Protected CORS: restrict to frontend origins ---
+const protectedCors = cors({
+  origin: [
+    "https://whendoesitgetgood.net",
+    "https://www.whendoesitgetgood.net",
+    "https://when-does-it-get-good.vercel.app",
+    "http://localhost:5173",
+  ],
+  methods: ["GET", "POST", "PATCH", "DELETE"],
+  credentials: true,
+});
+
+// Apply protected CORS globally
+app.use(protectedCors);
+
+// Apply public CORS to public routes only
+app.use("/api/shows", publicCors, publicShowsRouter);
+app.get("/count/:show_tmdb_id", publicCors, votesCountRouter);
+
+const publicLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30,             // max 30 requests per minute per IP
+  message: "Too many requests from this IP, try again later.",
+});
+
+app.use("/api/shows", publicLimiter);
+app.get("/count/:show_tmdb_id", publicLimiter);
 
 // ------------------- Helpers -------------------
 /**
@@ -270,6 +308,9 @@ app.patch("/update-vote/:user_id/:show_tmdb_id", updateVoteRouter);
 app.delete("/delete-vote/:user_id/:show_tmdb_id", deleteVoteRouter);
 app.get("/votes/:user_id/:show_tmdb_id", getVotesRouter);
 app.get("/count/:show_tmdb_id", votesCountRouter);
+
+// ------------------- Public shows routes -------------------
+app.use("/api/shows", publicShowsRouter);
 
 // ------------------- Start server -------------------
 const PORT = process.env.PORT || 3001;
