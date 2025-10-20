@@ -97,7 +97,7 @@ export default function Header() {
   }, []);
 
   return (
-    <header className="w-full bg-gray-500 shadow-md">
+    <header className="w-full bg-gray-500 shadow-md flex-shrink-0">
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between px-6 py-4 sm:py-5">
         {/* 🪪 Logo */}
         <div className="flex items-center mb-2 sm:mb-0">

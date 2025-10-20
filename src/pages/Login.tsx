@@ -78,15 +78,12 @@ export default function LoginPage() {
     }
   };
 
-
-
-
   const handlePasswordReset = async () => {
     setResetMessage(null);
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/login`,
+        redirectTo: `${window.location.origin}/reset-password`,
       });
 
       if (error) throw error;
@@ -96,7 +93,6 @@ export default function LoginPage() {
       setResetMessage(err.message || "Failed to send password reset email.");
     }
   };
-
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-start pt-24 bg-gray-800 px-4">

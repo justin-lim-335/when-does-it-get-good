@@ -10,7 +10,9 @@ import APIDocs from "./pages/APIDocs";
 import Privacy from "./pages/PrivacyPolicy";
 import Terms from "./pages/TermsOfUse";
 import History from "./pages/VotingHistory";
+import ResetPassword from "./pages/ResetPassword";
 import Waiting from "./pages/Waiting";
+import NoPageFound from "./pages/NoPageFound";
 import Footer from "./components/Footer";
 import ScrollToTop from "./components/ScrollToTop";
 
@@ -33,7 +35,10 @@ function App() {
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/history" element={<History />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/waiting" element={<Waiting />} />
+            {/* Catch-all route for anything that doesn't match above */}
+            <Route path="*" element={<NoPageFound />} />
           </Routes>
         </main>
         {/* Shared Footer */}

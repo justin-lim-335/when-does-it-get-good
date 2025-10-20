@@ -4,12 +4,13 @@
 
 /* Reset default styles and ensure full-width layout */
 html, body, #root {
-  width: 100%;
+  width: 100vw;
+  min-width: 100vw;
+  overflow-x: hidden;
   margin: 0;
   padding: 0;
   font-family: 'Inter', sans-serif;
-  background-color: #fff;
-  box-sizing: border-box;
+  background-color: #1f2937;
 }
 
 /* 🌙 Global Dark Theme Defaults */
@@ -32,7 +33,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Make all elements use border-box by default */
 *, *::before, *::after {
-  box-sizing: inherit;
+  box-sizing: border-box;
 }
 
 /* Global link styles */
@@ -46,7 +47,6 @@ a {
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
-  padding: 0 1rem; /* Side padding */
 }
 
 /* Main header logo */

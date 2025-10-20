@@ -15,6 +15,8 @@ import updateVoteRouter from "./routes/update-vote";
 import deleteVoteRouter from "./routes/delete-vote";
 import getVotesRouter from "./routes/get-vote";
 import getAverageRoute from "./routes/get-average";
+import votesCountRouter from "./routes/total-votes";
+import authRoutes from "./routes/auth";
 
 // ------------------- Setup -------------------
 dotenv.config();
@@ -108,6 +110,9 @@ app.post("/api/update-user", updateUserHandler);
 
 // Delete user route
 app.post("/api/delete-user", deleteUserHandler);
+
+// Reset password route
+app.use("/auth", authRoutes);
 
 // Search shows by title (Supabase + fallback to TMDb)
 app.use("/api/search", searchRoutes);
@@ -264,6 +269,7 @@ app.post("/submit-vote", submitVoteRouter);
 app.patch("/update-vote/:user_id/:show_tmdb_id", updateVoteRouter);
 app.delete("/delete-vote/:user_id/:show_tmdb_id", deleteVoteRouter);
 app.get("/votes/:user_id/:show_tmdb_id", getVotesRouter);
+app.use("/count/:show_tmdb_id", votesCountRouter);
 
 // ------------------- Start server -------------------
 const PORT = process.env.PORT || 3001;

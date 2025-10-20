@@ -40,6 +40,8 @@ export default function ShowPage() {
   const [loading, setLoading] = useState(true);
   const [voteSuccess, setVoteSuccess] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [totalVotes, setTotalVotes] = useState<number | null>(null);
+
 
   // Helper: find episode by absolute number
   const findEpisodeByAbsolute = (absolute: number) =>
@@ -203,6 +205,28 @@ export default function ShowPage() {
     }
   };
 
+  //Setup a fetch for total votes
+  const fetchTotalVotes = async () => {
+  if (!tmdb_id) return;
+
+  try {
+    const numericTmdbId = Number(tmdb_id);
+    const res = await fetch(`${API_BASE}/count/${numericTmdbId}`);
+    if (!res.ok) throw new Error(`Failed to fetch total votes: ${res.status}`);
+
+    const data = await res.json();
+    if (data?.totalVotes != null) {
+      setTotalVotes(data.totalVotes);
+    } else {
+      setTotalVotes(0);
+    }
+  } catch (err) {
+    console.error("Error fetching total votes:", err);
+    setTotalVotes(0);
+  }
+};
+
+
   // Setup realtime subscription for votes
   useEffect(() => {
     if (!tmdb_id || !user) return;
@@ -216,6 +240,8 @@ export default function ShowPage() {
       await fetchAverage();
       console.log("Fetching user vote...");
       await fetchUserVote();
+      console.log("Fetching total votes...");
+      await fetchTotalVotes();
     };
 
     fetchData();
@@ -237,6 +263,7 @@ export default function ShowPage() {
           // Only update average; userVote will be fetched on next render if needed
           if (payload.eventType === "INSERT" || payload.eventType === "UPDATE" || payload.eventType === "DELETE") {
             fetchAverage();
+            fetchTotalVotes();
           }
         }
       )
@@ -343,11 +370,18 @@ export default function ShowPage() {
     : null;
   const hasVotes = !!averageEpisode;
   const userEpisode = userVote ? findEpisodeByAbsolute(userVote) : null;
-  const averagePercent =
   hasVotes && averageEpisode && episodes.length > 1
     ? ((averageEpisode.absolute_number - 1) / (episodes.length - 1)) * 100
     : 50;
   
+  // Format large numbers into K, M, etc.
+  const formatVotes = (num: number) => {
+    if (num >= 1_000_000) return (num / 1_000_000).toFixed(1) + "M";
+    if (num >= 1_000) return (num / 1_000).toFixed(1) + "K";
+    return num.toString();
+  };
+
+
   console.log("tmdb_id:", tmdb_id);
   console.log("Rendering show:", show, "loading:", loading);
 
@@ -442,6 +476,12 @@ export default function ShowPage() {
             <h3 className="text-xl font-semibold text-gray-200 mb-3">
               When Does <span className="italic text-blue-400">{show?.title}</span> Get Good?
             </h3>
+            {/* Total votes bubble */}
+            {hasVotes && (
+              <div className="bg-blue-500/20 text-blue-200 text-sm font-medium px-4 py-2 rounded-full mb-4 inline-block shadow-md">
+                {totalVotes !== null && `${formatVotes(totalVotes)} total votes`}
+              </div>
+            )}
             <div className="relative w-full flex items-center justify-center">
               <div className="w-3/4 h-[4px] bg-black relative">
                 <div className="absolute -left-2 top-1/2 w-4 h-4 bg-black rounded-full -translate-y-1/2" />

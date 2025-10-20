@@ -25,7 +25,6 @@ header {
 /* Main content area */
 main {
   width: 100%;
-  max-width: 1200px; /* Optional max width for large screens */
   margin: 0 auto;
   padding: 2rem 0;
 }
