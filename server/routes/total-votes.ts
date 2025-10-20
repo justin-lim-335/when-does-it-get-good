@@ -19,7 +19,7 @@ router.get("/count/:show_tmdb_id", async (req, res) => {
       .eq("show_tmdb_id", show_tmdb_id);
 
     if (error) throw error;
-    res.json({ count });
+    res.json({ totalVotes: count });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch vote count" });
