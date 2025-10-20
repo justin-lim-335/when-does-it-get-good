@@ -10,7 +10,7 @@ const supabase = createClient(
 const router = express.Router();
 
 // GET total votes for a specific show
-router.get("/:show_tmdb_id", async (req, res) => {
+router.get("/count/:show_tmdb_id", async (req, res) => {
   try {
     const { show_tmdb_id } = req.params;
     const { count, error } = await supabase
