@@ -364,6 +364,50 @@ export default function ShowPage() {
     }
   };
 
+    // Always fetch average and total votes
+useEffect(() => {
+  if (!tmdb_id) return;
+
+  const fetchVotesData = async () => {
+    await fetchAverage();       // Average episode
+    await fetchTotalVotes();    // Total votes
+  };
+
+  fetchVotesData();
+}, [tmdb_id]);
+
+// Fetch user-specific vote if logged in
+useEffect(() => {
+  if (!tmdb_id || !user) return;
+
+  fetchUserVote();
+
+  // Optional: real-time subscription for logged-in users only
+  const numericTmdbId = Number(tmdb_id);
+  const channel = supabase
+    .channel(`votes-${numericTmdbId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "votes",
+        filter: `show_tmdb_id=eq.${numericTmdbId}`,
+      },
+      (payload) => {
+        console.log("Realtime vote update received:", payload);
+        fetchAverage();
+        fetchTotalVotes();
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, [tmdb_id, user]);
+
+
   const averageEpisode = 
     average != null && episodes.length > 0 
     ? findEpisodeByAbsolute(Math.round(average)) 
