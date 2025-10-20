@@ -14,10 +14,15 @@ export default function ResetPassword() {
   useEffect(() => {
     console.log("🔄 ResetPassword useEffect running...");
 
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get("token_hash");
-    const type = params.get("type");
+    // Handle both hash-based (#token_hash=...) and query-based (?token_hash=...) URLs
+    const hashParams = new URLSearchParams(window.location.hash.replace("#", "?"));
+    const searchParams = new URLSearchParams(window.location.search);
 
+    const token =
+      hashParams.get("token_hash") || searchParams.get("token_hash");
+    const type = hashParams.get("type") || searchParams.get("type");
+
+    console.log("🌐 URL hash:", window.location.hash);
     console.log("🌐 URL search:", window.location.search);
     console.log("🧩 Parsed token:", token, "type:", type);
 
@@ -81,10 +86,7 @@ export default function ResetPassword() {
             {error || "Verifying your reset link..."}
           </p>
         ) : (
-          <form
-            onSubmit={handlePasswordReset}
-            className="flex flex-col gap-4 w-full"
-          >
+          <form onSubmit={handlePasswordReset} className="flex flex-col gap-4">
             <input
               type="password"
               placeholder="New Password"
