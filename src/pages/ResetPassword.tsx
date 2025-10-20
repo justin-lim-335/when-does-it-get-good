@@ -12,37 +12,46 @@ export default function ResetPassword() {
   const [isValidSession, setIsValidSession] = useState(false);
 
   useEffect(() => {
-    const hash = window.location.hash.substring(1); // remove #
+    console.log("ResetPassword useEffect running...");
+    const hash = window.location.hash.substring(1); // remove "#"
+    console.log("URL hash:", hash);
     const params = new URLSearchParams(hash);
     const token = params.get("token_hash");
     const type = params.get("type");
+    console.log("Parsed token:", token, "type:", type);
 
     if (token && type === "recovery") {
-      // Exchange the token for a session
+      console.log("Exchanging token for session...");
       supabase.auth.exchangeCodeForSession(token)
         .then(({ data, error }) => {
           if (error) {
             console.error("Session exchange error:", error);
             setError("Invalid or expired password reset link.");
-          } else if (data?.session) {
-            // Set the session in Supabase
-            supabase.auth.setSession(data.session)
-              .then(({ error }) => {
-                if (error) {
-                  console.error("Error setting session:", error);
-                  setError("Failed to establish session.");
-                } else {
-                  setIsValidSession(true);
-                }
-              });
+          } else {
+            console.log("Exchange data:", data);
+            if (data?.session) {
+              console.log("Setting session in Supabase...");
+              supabase.auth.setSession(data.session)
+                .then(({ error }) => {
+                  if (error) {
+                    console.error("Error setting session:", error);
+                    setError("Failed to establish session.");
+                  } else {
+                    console.log("Session successfully set!");
+                    setIsValidSession(true);
+                  }
+                });
+            } else {
+              console.warn("No session returned from exchangeCodeForSession");
+              setError("Invalid or expired password reset link.");
+            }
           }
         });
     } else {
+      console.warn("Token missing or type invalid.");
       setError("Missing or invalid reset link.");
     }
   }, []);
-
-
 
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,15 +63,16 @@ export default function ResetPassword() {
       return;
     }
 
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword,
-    });
+    console.log("Updating password...");
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
 
     if (error) {
+      console.error("Password update error:", error);
       setError(error.message);
     } else {
+      console.log("Password successfully reset!");
       setMessage("Password successfully reset! Redirecting to login...");
-      setTimeout(() => navigate("/"), 2000);
+      setTimeout(() => navigate("/login"), 2000);
     }
   };
 
