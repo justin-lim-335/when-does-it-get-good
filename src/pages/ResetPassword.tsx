@@ -12,35 +12,38 @@ export default function ResetPassword() {
   const [isValidSession, setIsValidSession] = useState(false);
 
   useEffect(() => {
-    console.log("ResetPassword useEffect running...");
+    console.log("🔄 ResetPassword useEffect running...");
 
-    // Get query params from the URL (Supabase v2 recovery link format)
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token_hash");
     const type = params.get("type");
 
-    console.log("URL search:", window.location.search);
-    console.log("Parsed token:", token, "type:", type);
+    console.log("🌐 URL search:", window.location.search);
+    console.log("🧩 Parsed token:", token, "type:", type);
 
     if (!token || type !== "recovery") {
-      console.error("Token missing or type invalid.");
+      console.error("❌ Token missing or type invalid.");
       setError("Invalid or expired reset link.");
       return;
     }
 
-    // Exchange token for a session (Supabase v2)
-    const exchangeToken = async () => {
-      const { data, error } = await supabase.auth.exchangeCodeForSession(token);
+    const verifyToken = async () => {
+      console.log("🔑 Verifying password recovery token via verifyOtp...");
+      const { data, error } = await supabase.auth.verifyOtp({
+        token_hash: token,
+        type: "recovery",
+      });
+
       if (error) {
-        console.error("Error exchanging token:", error);
+        console.error("🚫 Error verifying token:", error);
         setError("Your password reset link is invalid or expired.");
       } else {
-        console.log("Session established:", data.session);
+        console.log("✅ Token verified successfully:", data);
         setIsValidSession(true);
       }
     };
 
-    exchangeToken();
+    verifyToken();
   }, []);
 
   const handlePasswordReset = async (e: React.FormEvent) => {
@@ -53,14 +56,14 @@ export default function ResetPassword() {
       return;
     }
 
-    console.log("Updating password...");
+    console.log("🔐 Attempting password update...");
     const { error } = await supabase.auth.updateUser({ password: newPassword });
 
     if (error) {
-      console.error("Password update error:", error);
+      console.error("❗ Password update error:", error);
       setError(error.message);
     } else {
-      console.log("Password successfully reset!");
+      console.log("🎉 Password successfully reset!");
       setMessage("Password successfully reset! Redirecting to login...");
       setTimeout(() => navigate("/login"), 2000);
     }
@@ -78,18 +81,21 @@ export default function ResetPassword() {
             {error || "Verifying your reset link..."}
           </p>
         ) : (
-          <form onSubmit={handlePasswordReset} className="flex flex-col gap-4">
+          <form
+            onSubmit={handlePasswordReset}
+            className="flex flex-col gap-4 w-full"
+          >
             <input
               type="password"
               placeholder="New Password"
-              className="p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:ring-2 focus:ring-blue-500 outline-none"
+              className="p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:ring-2 focus:ring-blue-500 outline-none text-center"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
             />
             <input
               type="password"
               placeholder="Confirm Password"
-              className="p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:ring-2 focus:ring-blue-500 outline-none"
+              className="p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:ring-2 focus:ring-blue-500 outline-none text-center"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
             />
