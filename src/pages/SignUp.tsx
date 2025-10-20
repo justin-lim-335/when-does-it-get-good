@@ -59,14 +59,10 @@ export default function SignUp() {
 
       const backendData = await res.json();
 
-      if (!res.ok) {
-        if (res.status === 409) {
-          // User already exists
-          setError("This email is already registered. Try logging in instead.");
-          return; // stop navigation
-        }
+      if (!res.ok && res.status !== 409) {
         throw new Error(backendData.error || "Failed to create user profile");
       }
+
 
       // 3️⃣ Navigate only if signup was successful
       navigate("/waiting");
