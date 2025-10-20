@@ -12,24 +12,36 @@ export default function ResetPassword() {
   const [isValidSession, setIsValidSession] = useState(false);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get("access_token");
+    const hash = window.location.hash.substring(1); // remove #
+    const params = new URLSearchParams(hash);
+    const token = params.get("token_hash");
     const type = params.get("type");
 
     if (token && type === "recovery") {
+      // Exchange the token for a session
       supabase.auth.exchangeCodeForSession(token)
         .then(({ data, error }) => {
           if (error) {
             console.error("Session exchange error:", error);
             setError("Invalid or expired password reset link.");
-          } else {
-            setIsValidSession(true);
+          } else if (data?.session) {
+            // Set the session in Supabase
+            supabase.auth.setSession(data.session)
+              .then(({ error }) => {
+                if (error) {
+                  console.error("Error setting session:", error);
+                  setError("Failed to establish session.");
+                } else {
+                  setIsValidSession(true);
+                }
+              });
           }
         });
     } else {
       setError("Missing or invalid reset link.");
     }
   }, []);
+
 
 
   const handlePasswordReset = async (e: React.FormEvent) => {
