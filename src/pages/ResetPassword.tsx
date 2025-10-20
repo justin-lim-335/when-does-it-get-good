@@ -13,44 +13,34 @@ export default function ResetPassword() {
 
   useEffect(() => {
     console.log("ResetPassword useEffect running...");
-    const hash = window.location.hash.substring(1); // remove "#"
-    console.log("URL hash:", hash);
-    const params = new URLSearchParams(hash);
+
+    // Get query params from the URL (Supabase v2 recovery link format)
+    const params = new URLSearchParams(window.location.search);
     const token = params.get("token_hash");
     const type = params.get("type");
+
+    console.log("URL search:", window.location.search);
     console.log("Parsed token:", token, "type:", type);
 
-    if (token && type === "recovery") {
-      console.log("Exchanging token for session...");
-      supabase.auth.exchangeCodeForSession(token)
-        .then(({ data, error }) => {
-          if (error) {
-            console.error("Session exchange error:", error);
-            setError("Invalid or expired password reset link.");
-          } else {
-            console.log("Exchange data:", data);
-            if (data?.session) {
-              console.log("Setting session in Supabase...");
-              supabase.auth.setSession(data.session)
-                .then(({ error }) => {
-                  if (error) {
-                    console.error("Error setting session:", error);
-                    setError("Failed to establish session.");
-                  } else {
-                    console.log("Session successfully set!");
-                    setIsValidSession(true);
-                  }
-                });
-            } else {
-              console.warn("No session returned from exchangeCodeForSession");
-              setError("Invalid or expired password reset link.");
-            }
-          }
-        });
-    } else {
-      console.warn("Token missing or type invalid.");
-      setError("Missing or invalid reset link.");
+    if (!token || type !== "recovery") {
+      console.error("Token missing or type invalid.");
+      setError("Invalid or expired reset link.");
+      return;
     }
+
+    // Exchange token for a session (Supabase v2)
+    const exchangeToken = async () => {
+      const { data, error } = await supabase.auth.exchangeCodeForSession(token);
+      if (error) {
+        console.error("Error exchanging token:", error);
+        setError("Your password reset link is invalid or expired.");
+      } else {
+        console.log("Session established:", data.session);
+        setIsValidSession(true);
+      }
+    };
+
+    exchangeToken();
   }, []);
 
   const handlePasswordReset = async (e: React.FormEvent) => {
@@ -77,27 +67,29 @@ export default function ResetPassword() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-start bg-gray-900 px-4">
-      <div className="bg-gray-800 p-8 rounded-2xl shadow-lg w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gray-900 px-4">
+      <div className="bg-gray-800 p-8 rounded-2xl shadow-xl w-full max-w-md flex flex-col justify-center">
         <h2 className="text-2xl font-bold text-center text-white mb-6">
           Reset Your Password
         </h2>
 
         {!isValidSession ? (
-          <p className="text-center text-red-400">{error || "Verifying link..."}</p>
+          <p className="text-center text-red-400">
+            {error || "Verifying your reset link..."}
+          </p>
         ) : (
           <form onSubmit={handlePasswordReset} className="flex flex-col gap-4">
             <input
               type="password"
               placeholder="New Password"
-              className="p-2 rounded bg-gray-700 text-white border border-gray-600 focus:ring-2 focus:ring-blue-500"
+              className="p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:ring-2 focus:ring-blue-500 outline-none"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
             />
             <input
               type="password"
               placeholder="Confirm Password"
-              className="p-2 rounded bg-gray-700 text-white border border-gray-600 focus:ring-2 focus:ring-blue-500"
+              className="p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:ring-2 focus:ring-blue-500 outline-none"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
             />
@@ -107,7 +99,7 @@ export default function ResetPassword() {
 
             <button
               type="submit"
-              className="w-full py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+              className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-colors"
             >
               Reset Password
             </button>
