@@ -171,13 +171,22 @@ export default function SignUp() {
                 : "Re-enter your password"}
             </p>
           </div>
-
+            <p className={"text-xs text-gray-200 mt-0 justify-center"}>
+              Signing up indicates agreement to our{" "}
+              <a href="/terms" className="text-blue-400 hover:underline">
+                Terms of Service
+              </a>
+              {" "}and{" "}
+              <a href="/privacy" className="text-blue-400 hover:underline">
+                Privacy Policy
+              </a>
+            </p>
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className={`mt-2 p-2 rounded font-semibold ${
+            className={`mt-0 p-2 rounded font-semibold ${
               loading ? "bg-gray-600 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
             } text-white transition-colors`}
           >
