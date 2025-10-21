@@ -57,11 +57,15 @@ export default function SignUp() {
         body: JSON.stringify({ email }),
       });
 
-      const backendData = await res.json();
-
-      if (!res.ok && res.status !== 409) {
+      if (!res.ok) {
+        const backendData = await res.json();
+        if (res.status === 409) {
+          setError("This email is already registered. Try logging in instead.");
+          return; // stop navigation to waiting page
+        }
         throw new Error(backendData.error || "Failed to create user profile");
       }
+
 
 
       // 3️⃣ Navigate only if signup was successful

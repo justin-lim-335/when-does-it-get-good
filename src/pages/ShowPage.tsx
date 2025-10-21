@@ -41,6 +41,9 @@ export default function ShowPage() {
   const [voteSuccess, setVoteSuccess] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [totalVotes, setTotalVotes] = useState<number | null>(null);
+  const [selectedSeason, setSelectedSeason] = useState<number | "">("");
+  const [filteredEpisodes, setFilteredEpisodes] = useState<Episode[]>([]);
+
 
 
   // Helper: find episode by absolute number
@@ -108,7 +111,11 @@ export default function ShowPage() {
           }
         }
 
+        
         setEpisodes(allEpisodes);
+        setFilteredEpisodes(allEpisodes.filter(ep => ep.season_number === 1)); // default to Season 1
+        setSelectedSeason(1);
+
       } catch (err) {
         console.error("Failed to fetch show info:", err);
         setErrorMessage("Could not load show details.");
@@ -120,6 +127,15 @@ export default function ShowPage() {
     fetchShowAndEpisodes();
   }, [tmdb_id]);
 
+  // Update filtered episodes when selectedSeason changes
+  useEffect(() => {
+    if (selectedSeason === "") {
+      setFilteredEpisodes([]);
+      return;
+    }
+    setFilteredEpisodes(episodes.filter(ep => ep.season_number === Number(selectedSeason)));
+    setSelectedEpisode(""); // reset selected episode when changing seasons
+  }, [selectedSeason, episodes]);
 
   // Fetch average numeric absolute_number
   const fetchAverage = async () => {
@@ -429,6 +445,14 @@ useEffect(() => {
   console.log("tmdb_id:", tmdb_id);
   console.log("Rendering show:", show, "loading:", loading);
 
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-start h-screen text-gray-200 text-lg">
+        Loading show page...
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-800">
       <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -455,24 +479,42 @@ useEffect(() => {
         )}
 
         {/* Voting section */}
-        <div className="bg-gray-600 rounded-2xl shadow-md p-6 flex flex-col gap-3 relative pb-60 md:pb-6">
+        <div className="bg-gray-600 rounded-2xl shadow-md p-6 flex flex-col gap-1 relative pb-80 md:pb-6">
           {!userVote || isChangingVote ? (
             <>
               <h2 className="text-2xl font-semibold text-gray-200">Submit Your Vote</h2>
               <form onSubmit={handleVoteSubmit} className="flex flex-col gap-3">
                 {episodes.length > 0 ? (
-                  <select
-                    className="border border-gray-300 rounded-md p-3 w-full text-gray-800 bg-white"
-                    value={selectedEpisode}
-                    onChange={(e) => setSelectedEpisode(e.target.value === "" ? "" : Number(e.target.value))}
-                  >
-                    <option value="">-- Choose an episode --</option>
-                    {episodes.map((ep) => (
-                      <option key={ep.absolute_number} value={ep.absolute_number}>
-                        S{ep.season_number}E{ep.episode_number} — {ep.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex flex-col gap-4 w-full">
+                    {/* Dropdown 1: Select Season */}
+                    <select
+                      className="border border-gray-300 rounded-md p-3 w-full text-gray-800 bg-white"
+                      value={selectedSeason}
+                      onChange={(e) => setSelectedSeason(e.target.value === "" ? "" : Number(e.target.value))}
+                    >
+                      <option value="">-- Select Season --</option>
+                      {[...new Set(episodes.map(ep => ep.season_number))].map(season => (
+                        <option key={season} value={season}>
+                          Season {season}
+                        </option>
+                      ))}
+                    </select>
+
+                    {/* Dropdown 2: Select Episode */}
+                    <select
+                      className="border border-gray-300 rounded-md p-3 w-full text-gray-800 bg-white"
+                      value={selectedEpisode}
+                      onChange={(e) => setSelectedEpisode(e.target.value === "" ? "" : Number(e.target.value))}
+                      disabled={!selectedSeason || filteredEpisodes.length === 0}
+                    >
+                      <option value="">-- Select Episode --</option>
+                      {filteredEpisodes.map((ep) => (
+                        <option key={ep.absolute_number} value={ep.absolute_number}>
+                          Episode {ep.episode_number} — {ep.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 ) : (
                   <p className="text-gray-200 italic">Loading episodes...</p>
                 )}
@@ -516,13 +558,13 @@ useEffect(() => {
           )}
 
           {/* Average indicator */}
-          <div className="mt-6 border-t pt-4 text-center flex flex-col items-center relative">
-            <h3 className="text-xl font-semibold text-gray-200 mb-3">
+          <div className="mt-2 border-t pt-4 text-center flex flex-col items-center relative">
+            <h3 className="text-xl font-semibold text-gray-200 mb-2">
               When Does <span className="italic text-blue-400">{show?.title}</span> Get Good?
             </h3>
             {/* Total votes bubble */}
             {hasVotes && (
-              <div className="bg-blue-500/20 text-blue-200 text-sm font-medium px-4 py-2 rounded-full mb-4 inline-block shadow-md">
+              <div className="bg-blue-500/20 text-blue-200 text-sm font-medium px-4 py-2 rounded-full mb-3 inline-block shadow-md">
                 {totalVotes !== null && `${formatVotes(totalVotes)} total votes`}
               </div>
             )}
@@ -558,7 +600,7 @@ useEffect(() => {
                       <img
                         src={`${TMDB_IMAGE_BASE}${averageEpisode.still_path}`}
                         alt={averageEpisode.name}
-                        className="w-32 h-auto mb-2 rounded-md"
+                        className="w-32 h-auto mb-1 rounded-md"
                       />
                     )}
                     <p className="font-bold">

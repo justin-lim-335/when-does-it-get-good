@@ -1,6 +1,6 @@
 // src/components/Header.tsx
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import logo from "../assets/logo.png";
@@ -16,7 +16,9 @@ interface Show {
 
 export default function Header() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, username } = useAuth();
+
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Show[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -24,8 +26,9 @@ export default function Header() {
   const [displayName, setDisplayName] = useState("User");
 
   const accountRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
 
-  // 🔍 Search suggestions
+  // 🔍 Fetch search suggestions
   useEffect(() => {
     if (!query) {
       setSuggestions([]);
@@ -49,14 +52,16 @@ export default function Header() {
     fetchSuggestions();
   }, [query]);
 
+  // 🎯 Handle selection
   const handleSelect = (tmdb_id: number) => {
     navigate(`/shows/${tmdb_id}`);
     setQuery("");
+    setSuggestions([]);
     setShowDropdown(false);
   };
 
-  // 👤 Account display name
-    useEffect(() => {
+  // 👤 Fetch user display name
+  useEffect(() => {
     const fetchProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -85,16 +90,26 @@ export default function Header() {
     navigate("/");
   };
 
-  // ✋ Close dropdown when clicking outside
+  // 🖱️ Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (accountRef.current && !accountRef.current.contains(e.target as Node)) {
         setAccountDropdown(false);
       }
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // 🔄 Reset search when navigating
+  useEffect(() => {
+    setQuery("");
+    setSuggestions([]);
+    setShowDropdown(false);
+  }, [location]);
 
   return (
     <header className="w-full bg-gray-500 shadow-md flex-shrink-0">
@@ -110,11 +125,12 @@ export default function Header() {
         </div>
 
         {/* 🔍 Search Bar */}
-        <div className="flex-1 mx-6 relative w-full max-w-2xl">
+        <div ref={searchRef} className="flex-1 mx-6 relative w-full max-w-2xl">
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => query && setShowDropdown(true)}
             placeholder="Search shows..."
             className="w-full px-4 py-3 rounded-md border border-gray-300 text-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
