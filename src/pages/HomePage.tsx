@@ -116,11 +116,11 @@ export default function HomePage() {
         <Carousel title="Popular Anime" shows={data.popularAnime} />
         <Carousel title="Popular Dramas" shows={data.popularDramas} />
         <Carousel title="Popular Sitcoms" shows={data.popularSitcoms} />
-        <Carousel title="Popular Sci-Fi" shows={data.popularSciFi} />
-        <Carousel title="Popular Action" shows={data.popularAction} />
-        <Carousel title="Popular Mystery" shows={data.popularMystery} />
-        <Carousel title="Popular Reality" shows={data.popularReality} />
-        <Carousel title="Popular Animation" shows={data.popularAnimation} />
+        <Carousel title="Popular Sci-Fi & Fantasy" shows={data.popularSciFi} />
+        <Carousel title="Popular Action & Adventure" shows={data.popularAction} />
+        <Carousel title="Popular Mysteries" shows={data.popularMystery} />
+        <Carousel title="Popular Reality Shows" shows={data.popularReality} />
+        <Carousel title="Popular Animated Shows" shows={data.popularAnimation} />
       </div>
     </div>
   );
