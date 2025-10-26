@@ -15,6 +15,12 @@ interface HomepageData {
   mostVoted: Show[];
   popularAnime: Show[];
   popularDramas: Show[];
+  popularSitcoms: Show[];
+  popularSciFi: Show[];
+  popularAction: Show[];
+  popularMystery: Show[];
+  popularReality: Show[];
+  popularAnimation: Show[];
 }
 
 export default function HomePage() {
@@ -63,6 +69,12 @@ export default function HomePage() {
         mostVoted: (json.mostVoted || []).slice(0, 24).map(normalizeShow),
         popularAnime: (json.popularAnime || []).slice(0, 24).map(normalizeShow),
         popularDramas: (json.popularDramas || []).slice(0, 24).map(normalizeShow),
+        popularSitcoms: (json.popularSitcoms || []).slice(0, 24).map(normalizeShow),
+        popularSciFi: (json.popularSciFi || []).slice(0, 24).map(normalizeShow),
+        popularAction: (json.popularAction || []).slice(0, 24).map(normalizeShow),
+        popularMystery: (json.popularMystery || []).slice(0, 24).map(normalizeShow),
+        popularReality: (json.popularReality || []).slice(0, 24).map(normalizeShow),
+        popularAnimation: (json.popularAnimation || []).slice(0, 24).map(normalizeShow),
       });
     } catch (err) {
       console.error("❌ Failed to fetch homepage data:", err);
@@ -103,6 +115,12 @@ export default function HomePage() {
         <Carousel title="Most Voted" shows={data.mostVoted} />
         <Carousel title="Popular Anime" shows={data.popularAnime} />
         <Carousel title="Popular Dramas" shows={data.popularDramas} />
+        <Carousel title="Popular Sitcoms" shows={data.popularSitcoms} />
+        <Carousel title="Popular Sci-Fi" shows={data.popularSciFi} />
+        <Carousel title="Popular Action" shows={data.popularAction} />
+        <Carousel title="Popular Mystery" shows={data.popularMystery} />
+        <Carousel title="Popular Reality" shows={data.popularReality} />
+        <Carousel title="Popular Animation" shows={data.popularAnimation} />
       </div>
     </div>
   );

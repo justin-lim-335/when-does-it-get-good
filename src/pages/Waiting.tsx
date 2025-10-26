@@ -6,10 +6,6 @@ import logo from "../assets/logo.png";
 export default function Waiting() {
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // if you want to auto-redirect back after some time, add logic here
-  }, []);
-
   return (
     <div className="min-h-screen flex flex-col items-center justify-start pt-24 bg-gray-800 px-4">
       <img src={logo} alt="Logo" className="w-32 mb-6" />
@@ -19,7 +15,7 @@ export default function Waiting() {
           We sent a confirmation link to the email you provided. Click that link to confirm your account and you'll
           be redirected back to the site.
         </p>
-        <p className="text-sm text-gray-400">If you don't receive the email, check spam or try signing up again.</p>
+        <p className="text-sm text-gray-400">If you don't see the email, please check your spam folder.</p>
         <p className="text-sm text-gray-400">Contact whendoesitgg@gmail.com for further assistance</p>
       </div>
       <button

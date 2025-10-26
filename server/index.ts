@@ -123,7 +123,7 @@ app.get("/shows/popular", async (req, res) => {
     // --- Fetch from TMDb ---
     const fetchJson = async (url: string) => (await fetch(url)).json();
 
-    const [tmdbReleased, tmdbAnime, tmdbDrama] = await Promise.all([
+    const [tmdbReleased, tmdbAnime, tmdbDrama, tmdbSitcoms, tmdbSciFi, tmdbAction, tmdbMystery, tmdbReality, tmdbAnimation] = await Promise.all([
       fetchJson(
         `https://api.themoviedb.org/3/tv/on_the_air?api_key=${TMDB_API_KEY}&language=en-US&page=1`
       ),
@@ -132,6 +132,24 @@ app.get("/shows/popular", async (req, res) => {
       ),
       fetchJson(
         `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=18&sort_by=popularity.desc&page=1`
+      ),
+      fetchJson(
+        `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=35&sort_by=popularity.desc&page=1`
+      ),
+      fetchJson(
+        `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=10765&sort_by=popularity.desc&page=1`
+      ),
+      fetchJson(
+        `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=10759&sort_by=popularity.desc&page=1`
+      ),
+      fetchJson(
+        `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=9648&sort_by=popularity.desc&page=1`
+      ),
+      fetchJson(
+        `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=10764&sort_by=popularity.desc&page=1`
+      ),
+      fetchJson(
+        `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=16&sort_by=popularity.desc&page=1`
       ),
     ]);
 
@@ -168,6 +186,12 @@ app.get("/shows/popular", async (req, res) => {
         mostVoted: [],
         popularAnime: (tmdbAnime.results || []).slice(0, 24),
         popularDramas: (tmdbDrama.results || []).slice(0, 24),
+        popularSitcoms: (tmdbSitcoms.results || []).slice(0, 24),
+        popularSciFi: (tmdbSciFi.results || []).slice(0, 24),
+        popularAction: (tmdbAction.results || []).slice(0, 24),
+        popularMystery: (tmdbMystery.results || []).slice(0, 24),
+        popularReality: (tmdbReality.results || []).slice(0, 24),
+        popularAnimation: (tmdbAnimation.results || []).slice(0, 24),
       });
     }
 
@@ -206,6 +230,12 @@ app.get("/shows/popular", async (req, res) => {
       mostVoted: (showsData || []).map(normalizeShow),
       popularAnime: (tmdbAnime.results || []).slice(0, 24).map(normalizeShow),
       popularDramas: (tmdbDrama.results || []).slice(0, 24).map(normalizeShow),
+      popularSitcoms: (tmdbSitcoms.results || []).slice(0, 24).map(normalizeShow),
+      popularSciFi: (tmdbSciFi.results || []).slice(0, 24).map(normalizeShow),
+      popularAction: (tmdbAction.results || []).slice(0, 24).map(normalizeShow),
+      popularMystery: (tmdbMystery.results || []).slice(0, 24).map(normalizeShow),
+      popularReality: (tmdbReality.results || []).slice(0, 24).map(normalizeShow),
+      popularAnimation: (tmdbAnimation.results || []).slice(0, 24).map(normalizeShow),
     });
   } catch (err) {
     console.error("❌ Homepage fetch error:", err);
