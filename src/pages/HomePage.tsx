@@ -64,7 +64,7 @@ export default function HomePage() {
       });
 
       // Remove inappropriate shows from JSON data based on list of selected show IDs in specific list
-      const inappropriateShowIds = [288577, 241002, 71932]; 
+      const inappropriateShowIds = [288577, 241002, 71932, 57775]; 
       Object.keys(json).forEach((key) => {
         if (Array.isArray(json[key])) {
           json[key] = json[key].filter((show: any) => !inappropriateShowIds.includes(show.tmdb_id));

@@ -128,7 +128,7 @@ app.get("/shows/popular", async (req, res) => {
         `https://api.themoviedb.org/3/tv/on_the_air?api_key=${TMDB_API_KEY}&language=en-US&page=1`
       ),
       fetchJson(
-        `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=16&with_origin_country=JP&sort_by=popularity.desc&page=1&query=anime&without_genres=10762`
+        `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=16&with_origin_country=JP&sort_by=popularity.desc&page=1&query=anime&without_genres=10762,10751`
       ),
       fetchJson(
         `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=18&sort_by=popularity.desc&page=1`
@@ -140,7 +140,7 @@ app.get("/shows/popular", async (req, res) => {
         `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=10765&sort_by=popularity.desc&page=1`
       ),
       fetchJson(
-        `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=10759&sort_by=popularity.desc&page=1`
+        `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=10759&sort_by=popularity.desc&page=1&without_genres=10762,10751`
       ),
       fetchJson(
         `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=9648&sort_by=popularity.desc&page=1`
@@ -149,7 +149,7 @@ app.get("/shows/popular", async (req, res) => {
         `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=10764&sort_by=popularity.desc&page=1`
       ),
       fetchJson(
-        `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=16&sort_by=popularity.desc&page=1`
+        `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=16&sort_by=popularity.desc&page=1&without_genres=10751`
       ),
     ]);
 
