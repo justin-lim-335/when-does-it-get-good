@@ -214,7 +214,7 @@ app.get("/shows/popular", async (req, res) => {
 
     // Check top IDs
     console.log("Top voted show IDs:", topIds);
-    
+
     // Fetch show details for top voted IDs
     const { data: showsData, error: showsError } = await supabase
       .from("shows")
@@ -243,6 +243,9 @@ app.get("/shows/popular", async (req, res) => {
       popularReality: (tmdbReality.results || []).slice(0, 24).map(normalizeShow),
       popularAnimation: (tmdbAnimation.results || []).slice(0, 24).map(normalizeShow),
     });
+
+    // Check if most voted shows were returned in order
+    console.log("Most voted shows returned:", showsData);
   } catch (err) {
     console.error("❌ Homepage fetch error:", err);
     res.status(500).json({ error: "Internal server error" });
