@@ -175,7 +175,9 @@ app.get("/shows/popular", async (req, res) => {
     // --- Most voted (aggregate by show) ---
     const { data: votesData, error: votesError } = await supabase
       .from("votes")
-      .select("show_tmdb_id");
+      .select("show_tmdb_id")
+      .limit(10000)
+      .order("show_tmdb_id", { ascending: false });
 
     if (votesError) throw votesError;
 

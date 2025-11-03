@@ -63,11 +63,15 @@ export default function HomePage() {
         }
       });
 
-      // Remove inappropriate shows from JSON data based on list of selected show IDs in specific list
-      const inappropriateShowIds = [288577, 241002, 71932, 57775]; 
+      // Order shows for most voted from most to least votes
+      json.mostVoted.sort((a: any, b: any) => a.vote_count - b.vote_count);
+
+      // Remove inappropriate and nonsense shows from JSON data based on list of selected show IDs in specific list
+      const inappropriateShowIds = [288577, 241002, 71932, 57775, 9537]; 
+      const nonsenseShowIds = [57775, 9537, 5811]; 
       Object.keys(json).forEach((key) => {
         if (Array.isArray(json[key])) {
-          json[key] = json[key].filter((show: any) => !inappropriateShowIds.includes(show.tmdb_id));
+          json[key] = json[key].filter((show: any) => !inappropriateShowIds.includes(show.tmdb_id) && !nonsenseShowIds.includes(show.tmdb_id));
         }
       });
 
