@@ -223,6 +223,13 @@ app.get("/shows/popular", async (req, res) => {
 
     if (showsError) throw showsError;
 
+    const showsArray = (showsData || []);
+
+    // Build a map from numeric tmdb_id -> show row
+    const showsById = new Map<number, any>(
+      showsArray.map((s: any) => [Number(s.tmdb_id), s])
+    );
+
     const normalizeShow = (s: any) => ({
       tmdb_id: s.tmdb_id || s.id,
       title: s.title || s.name,
@@ -230,13 +237,18 @@ app.get("/shows/popular", async (req, res) => {
       first_air_date: s.first_air_date || null,
     });
 
+    // Reorder according to topIds, keep only rows that exist
+    const orderedMostVoted = topIds
+      .map((id) => showsById.get(Number(id)))
+      .filter(Boolean);
+
         // Check if most voted shows were returned in order
-    console.log("Most voted shows returned:", showsData);
+    console.log("Most voted shows returned:", orderedMostVoted);
 
     res.json({
       recentlyReleased: (tmdbReleased.results || []).slice(0, 24).map(normalizeShow),
       recentlyVoted: recentVotes.map((v: any) => v.shows).filter(Boolean).map(normalizeShow),
-      mostVoted: (showsData || []).map(normalizeShow),
+      mostVoted: (orderedMostVoted || []).map(normalizeShow),
       popularAnime: (tmdbAnime.results || []).slice(0, 24).map(normalizeShow),
       popularDramas: (tmdbDrama.results || []).slice(0, 24).map(normalizeShow),
       popularSitcoms: (tmdbSitcoms.results || []).slice(0, 24).map(normalizeShow),
