@@ -175,9 +175,7 @@ app.get("/shows/popular", async (req, res) => {
     // --- Most voted (aggregate by show) ---
     const { data: votesData, error: votesError } = await supabase
       .from("votes")
-      .select("show_tmdb_id")
-      .limit(10000)
-      .order("show_tmdb_id", { ascending: false });
+      .select("show_tmdb_id");
 
     if (votesError) throw votesError;
 
@@ -196,6 +194,8 @@ app.get("/shows/popular", async (req, res) => {
         popularAnimation: (tmdbAnimation.results || []).slice(0, 24),
       });
     }
+
+    console.log(`Fetched ${votesData.length} total votes from Supabase for aggregation.`);
 
     // Aggregate votes by show ID
     const voteCounts: Record<string, number> = {};
