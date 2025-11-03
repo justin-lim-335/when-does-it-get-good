@@ -230,6 +230,9 @@ app.get("/shows/popular", async (req, res) => {
       first_air_date: s.first_air_date || null,
     });
 
+        // Check if most voted shows were returned in order
+    console.log("Most voted shows returned:", showsData);
+
     res.json({
       recentlyReleased: (tmdbReleased.results || []).slice(0, 24).map(normalizeShow),
       recentlyVoted: recentVotes.map((v: any) => v.shows).filter(Boolean).map(normalizeShow),
@@ -243,9 +246,6 @@ app.get("/shows/popular", async (req, res) => {
       popularReality: (tmdbReality.results || []).slice(0, 24).map(normalizeShow),
       popularAnimation: (tmdbAnimation.results || []).slice(0, 24).map(normalizeShow),
     });
-
-    // Check if most voted shows were returned in order
-    console.log("Most voted shows returned:", showsData);
   } catch (err) {
     console.error("❌ Homepage fetch error:", err);
     res.status(500).json({ error: "Internal server error" });
