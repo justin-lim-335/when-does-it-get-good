@@ -203,17 +203,11 @@ app.get("/shows/popular", async (req, res) => {
       }
     }
 
-    // Check final vote counts
-    console.log("Vote counts:", voteCounts);
-
     // Sort and take top 24 IDs
     const topIds = Object.entries(voteCounts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 24)
       .map(([id]) => Number(id));
-
-    // Check top IDs
-    console.log("Top voted show IDs:", topIds);
 
     // Fetch show details for top voted IDs
     const { data: showsData, error: showsError } = await supabase
