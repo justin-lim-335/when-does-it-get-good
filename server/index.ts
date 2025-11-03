@@ -125,16 +125,16 @@ app.get("/shows/popular", async (req, res) => {
 
     const [tmdbReleased, tmdbAnime, tmdbDrama, tmdbSitcoms, tmdbSciFi, tmdbAction, tmdbMystery, tmdbReality, tmdbAnimation] = await Promise.all([
       fetchJson(
-        `https://api.themoviedb.org/3/tv/on_the_air?api_key=${TMDB_API_KEY}&language=en-US&page=1`
+        `https://api.themoviedb.org/3/tv/on_the_air?api_key=${TMDB_API_KEY}&language=en-US&page=1&include_adult=false`
       ),
       fetchJson(
-        `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=16&with_origin_country=JP&sort_by=popularity.desc&page=1`
+        `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=16&with_origin_country=JP&sort_by=popularity.desc&page=1&include_adult=false`
       ),
       fetchJson(
         `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=18&sort_by=popularity.desc&page=1`
       ),
       fetchJson(
-        `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=35&sort_by=popularity.desc&page=1`
+        `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=35&sort_by=popularity.desc&page=1&include_adult=false`
       ),
       fetchJson(
         `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=10765&sort_by=popularity.desc&page=1`
@@ -149,7 +149,7 @@ app.get("/shows/popular", async (req, res) => {
         `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=10764&sort_by=popularity.desc&page=1`
       ),
       fetchJson(
-        `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=16&sort_by=popularity.desc&page=1`
+        `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=16&sort_by=popularity.desc&page=1&include_adult=false`
       ),
     ]);
 
